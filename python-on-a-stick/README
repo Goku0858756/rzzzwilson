@@ -1,0 +1,6 @@
+This directory contains all the example stuff for python-on-a-stick.
+See the wiki for the gory details.
+
+Note that the usb_image/Python27 directory is empty.  I didn't wish
+to clutter up the repository with 93MB of python.  The wiki tells
+you how to create that directory.

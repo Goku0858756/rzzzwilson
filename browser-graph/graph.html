@@ -25,7 +25,9 @@
      background-color:#ffcccc;
      layer-background-color:#ffcccc;} 
 </style>
+
 <script type="text/javascript">
+
 // configuration values for the GRAPH object
 
 // colours for various parts of the graph
@@ -83,6 +85,12 @@ var graphDCDamageGranule = 1.0;		// DC granularity (in percentage points)
 var graphDCHSRadius = 8;		// radius in pixels of HS semicircle
 var graphDCNewHSColour = "#808080";	// colour of DC "new" HS
 
+// Reference Curve stuff
+var graphRCWidth = 1;			// RC line width in pixels
+var graphRCHSRadius = 8;		// radius in pixels of HS semicircle
+var graphRCColour = "#000000";		// if defined, colour of HS
+					// if not, use RC colour
+
 // ErrorBar stuff for the Damage Curve
 var graphEBLineWidth = 0.5;		// width of errorbar lines in pixels
 var graphEBCapWidth = 3;		// halfwidth of capbar in pixels
@@ -92,6 +100,7 @@ var graphEBColour = "#000000";		// if defined, colour of errorbars
 var graphDMWidth = 0.5;			// line width in pixels
 var graphDMHSRadius = 8;		// radius in pixels of HS semicircle
 var graphDMGranule = 0.05;		// DM granularity (in metres)
+
 
 //////////////////////////////
 // Initial attempt at a 'graph' object usable by webELoss.
@@ -129,7 +138,7 @@ function Graph(canvas_name, tooltip_layer)
 
 	// object holding the Damage Curve data
 	// object is: {colour: "#ff0000", points:[{depth:x, damage:y, error: 10}, ...]}
-	this.DamageCurve = null
+	this.DamageCurve = null;
 
 	// hotspot (HS) stuff for DC
 	this.DCHSIndex = null;          // index into DamageCurve.points of HS DC
@@ -145,6 +154,17 @@ function Graph(canvas_name, tooltip_layer)
 	this.DCNewHotspotShowing = false;	// true if new DC hotspot is showing
 	this.DCNewHSx = null;			// if showing, X canvas coord
 	this.DCNewHSy = null;			// if showing, Y canvas coord
+
+	// array holding the Reference Curve data
+	// object is: {colour: "#ff0000", points:[{depth:x, damage:y}, ...]}
+	this.ReferenceCurves = [];
+	this.RCHS = [];                 // hotspot positions for RC
+
+	// hotspot (HS) stuff for RC
+	this.RCHSIndex = null;          // index into this.RCHS of RC HS
+	this.RCHotspotShowing = false;  // true if RC hotspot is showing
+	this.RCHSx = null;		// if showing, X canvas coord
+	this.RCHSy = null;		// if showing, Y canvas coord
 
 	// lengths of (dynamic) graph axes
 	this.graphXLength = null;       // X pixel length of graph data view
@@ -195,6 +215,28 @@ Graph.prototype.makeDCNewPoints = function()
 	new_depth = (last_depth + maxXAxis) / 2.0;
 	new_damage = last_damage;
 	this.DCNewPoints.push({depth:new_depth, damage:new_damage});
+}
+
+//////////////////////////////
+// populate the Reference Curves data
+Graph.prototype.setReferenceCurves = function(rc)
+{
+	this.ReferenceCurves = rc;
+	this.makeRCHotspots();
+}
+
+//////////////////////////////
+// Create the RC hotspot data, just array of last damage values for each RC curve
+Graph.prototype.makeRCHotspots = function()
+{
+        this.RCHS = []
+	for (var i in this.ReferenceCurves)
+	{
+                var curve = this.ReferenceCurves[i];
+                var last = curve.points[curve.points.length - 1];
+
+                this.RCHS.push(last.damage);
+	}
 }
 
 //////////////////////////////
@@ -367,6 +409,40 @@ Graph.prototype.refresh = function(event)
 		this.canvas_ctx.arc(this.DMHSx, this.DMHSy, graphDMHSRadius, 0, Math.PI, false);
 		this.canvas_ctx.fill();
 	}
+	// draw reference curves
+	for (var i in this.ReferenceCurves)
+	{
+	        var curve = this.ReferenceCurves[i];
+		var currentY = 0.0;	// Y coord of last point drawn
+
+		this.canvas_ctx.strokeStyle = curve.colour;
+		this.canvas_ctx.fillStyle = curve.colour;
+	        this.canvas_ctx.lineWidth = graphRCWidth;
+		this.canvas_ctx.beginPath();
+		this.canvas_ctx.moveTo(leftMargin, topMargin+this.graphYLength);
+
+		// lineTo() each point
+		for (var j in curve.points)
+		{
+			var point = curve.points[j];
+			var x = this.convertXGraph2Screen(point.depth);
+			var y = this.convertYGraph2Screen(point.damage);
+	
+			this.canvas_ctx.lineTo(x, y);
+			currentY = y
+		}
+
+       		this.canvas_ctx.lineTo(leftMargin+this.graphXLength, currentY);
+       		this.canvas_ctx.stroke();
+	}
+	// draw the RC hotspot, if showing
+	if (this.RCHotspotShowing)
+	{
+		this.canvas_ctx.beginPath();
+		this.canvas_ctx.moveTo(this.RCHSx, this.RCHSy);
+		this.canvas_ctx.arc(this.DMHSx, this.DMHSy, graphRCHSRadius, Math.PI/2, Math.PI/2+Math.PI, false);
+		this.canvas_ctx.fill();
+	}
 	// draw the error bars at each point on the damage curve
 	if (this.DamageCurve != null)
 	{
@@ -456,11 +532,9 @@ Graph.prototype.refresh = function(event)
 	var xoffset = leftMargin+this.graphXLength/2;
 	var yoffset = 60;
 	this.canvas_ctx.fillText(title, xoffset, yoffset);
-};
 
-Graph.prototype.debug = function(msg)
-{
-	console.debug(msg);
+	// recalculate the RC hotspots
+	this.makeRCHotspots();
 };
 
 // returns object with attributes for closest DM hotspot
@@ -513,6 +587,40 @@ Graph.prototype.closestDCPoint = function(x, y, radius)
 		var point = this.DamageCurve.points[i];
 		var xoffset = leftMargin + this.graphXLength*(point.depth-minXAxis)/(maxXAxis - minXAxis);
 		var yoffset = topMargin + this.graphYLength - this.graphYLength*(point.damage-minYAxis)/(maxYAxis - minYAxis);
+
+		if (this.pointClose(xoffset, yoffset, this.xScreenCoord, this.yScreenCoord, radius))
+		{
+			var new_close = Math.abs(this.xScreenCoord-xoffset) + Math.abs(this.yScreenCoord-yoffset);
+			if (new_close < close)
+			{
+				result = {index: i, x: xoffset, y: yoffset};
+				close = new_close;
+			}
+		}
+	}
+
+	if (radius*radius < close*close)
+		return null;
+
+	return result;
+};
+
+// returns object with attributes for closest RC hotspot
+// to mouse or null if none close enough
+//     result = {index: i, x: xoffset, y: yoffset}
+// where i is index of closest DM in this.RCHS
+Graph.prototype.closestRCPoint = function(points, x, y, radius)
+{
+	var result = null;
+	var close = 9999999999;
+
+	if (this.yScreenCoord > leftMargin+this.graphYLength+rightMargin)
+		return null;
+
+	for (var i in points)
+	{
+		var xoffset = leftMargin+this.graphXLength;
+                var yoffset = points[i];
 
 		if (this.pointClose(xoffset, yoffset, this.xScreenCoord, this.yScreenCoord, radius))
 		{
@@ -598,7 +706,7 @@ Graph.prototype.convertXGraph2Screen = function(x)
 };
 
 Graph.prototype.convertYGraph2Screen = function(y)
-{       
+{
 	return topMargin + this.graphYLength - ((y-minYAxis)*this.graphYLength)/(maxYAxis-minYAxis);
 };
 
@@ -650,11 +758,11 @@ Graph.prototype.onMouseMove = function(e)
 	}
 
 	// update graph coords
-        result = this.convertXScreen2Graph(this.xScreenCoord);
-        if (result != null)
-                this.xGraphCoord = result;
-        result = this.convertYScreen2Graph(this.yScreenCoord);
-        if (result != null)
+	result = this.convertXScreen2Graph(this.xScreenCoord);
+	if (result != null)
+	        this.xGraphCoord = result;
+	result = this.convertYScreen2Graph(this.yScreenCoord);
+	if (result != null)
 		this.yGraphCoord = result;
 
 	if (this.draggingDM)
@@ -775,6 +883,26 @@ Graph.prototype.onMouseMove = function(e)
 			force_refresh = true;
 	}
 
+	// check if close to an RC hotspot
+	{
+		var oldRCHotspotShowing = this.RCHotspotShowing;
+		var closest = this.closestRCPoint(this.RCHS, this.xScreenCoord, this.yScreenCoord, graphRCHSRadius);
+		this.RCHotspotShowing = false;
+		this.RCHSIndex = null;
+		if (closest)
+		{
+			// there is a closest, take note
+			this.RCHotspotShowing = true;
+			this.RCHSIndex = closest.index;
+			this.RCHSx = closest.x;
+			this.RCHSy = closest.y;
+		}
+
+		// force a redraw if any new RC HS status change
+		if (oldRCHotspotShowing != this.RCHotspotShowing)
+			force_refresh = true;
+	}
+
 	if (force_refresh)
 		window.onresize();
 };
@@ -785,6 +913,7 @@ Graph.prototype.onMouseDown = function(e)
 {
 	// remember if left button was pressed (TODO: MAKE PORTABLE)
 	this.leftButtonDown = (e.button == 0);
+	this.rightButtonDown = (e.button == 2);
 
 	// if left button and hotspot showing start dragging it
 	this.draggingDM = (this.DMHotspotShowing && this.leftButtonDown);
@@ -828,7 +957,77 @@ Graph.prototype.onMouseDown = function(e)
 			x_posn = leftMargin+this.graphXLength-graphAnnotateWidth-20;
 		annotate_show(this.nameOfTipsDIV, x_posn, topMargin+20);
 	}
+	else if (this.rightButtonDown)
+	{
+		if (this.DCHotspotShowing)
+		{
+			this.showAugmentedMenu(e);
+		}
+		else
+		{
+			this.showNormalMenu(e);
+		}
+	}
+	else
+	{
+		this.hideNormalMenu(e);
+		this.hideAugmentedMenu(e);
+	}
 };
+
+Graph.prototype.showNormalMenu = function(e)
+{
+	var menu = document.getElementById('menudiv');
+
+        //menu.style.left = e.layerX+'px';
+        //menu.style.top = e.layerY+'px';
+
+        menu.style.left = e.pageX+'px';
+        menu.style.top = e.pageY+'px';
+	menu.style.visibility="visible";
+        menu.style.display = "";
+
+        document.getElementById('item1').style.backgroundColor='#FFFFFF';
+        document.getElementById('item2').style.backgroundColor='#FFFFFF';
+        document.getElementById('item3').style.backgroundColor='#FFFFFF';
+        document.getElementById('item4').style.backgroundColor='#FFFFFF';
+
+        return false;
+};
+
+Graph.prototype.showAugmentedMenu = function(e)
+{
+	var menu = document.getElementById('augmenudiv');
+
+        //menu.style.left = e.layerX+'px';
+        //menu.style.top = e.layerY+'px';
+
+        menu.style.left = e.pageX+'px';
+        menu.style.top = e.pageY+'px';
+	menu.style.visibility="visible";
+        menu.style.display = "";
+
+        document.getElementById('item1').style.backgroundColor='#FFFFFF';
+        document.getElementById('item2').style.backgroundColor='#FFFFFF';
+        document.getElementById('item3').style.backgroundColor='#FFFFFF';
+        document.getElementById('item4').style.backgroundColor='#FFFFFF';
+
+        return false;
+};
+
+Graph.prototype.hideNormalMenu = function(e)
+{
+	var menu = document.getElementById('menudiv');
+
+	menu.style.visibility="hidden";
+}
+
+Graph.prototype.hideAugmentedMenu = function(e)
+{
+	var menu = document.getElementById('augmenudiv');
+
+	menu.style.visibility="hidden";
+}
 
 Graph.prototype.onMouseUp = function(e)
 {
@@ -905,22 +1104,22 @@ graph = new Graph("graph", "annotation");
 
 function refresh_bridge(e)
 {
-    graph.refresh(e);
+	graph.refresh(e);
 }
 
 function onmousemove_bridge(e)
 {
-    graph.onMouseMove(e);
+	graph.onMouseMove(e);
 }
 
 function onmousedown_bridge(e)
 {
-    graph.onMouseDown(e);
+	graph.onMouseDown(e);
 }
 
 function onmouseup_bridge(e)
 {
-    graph.onMouseUp(e);
+	graph.onMouseUp(e);
 }
 
 window.onload = refresh_bridge;
@@ -932,7 +1131,7 @@ document.onmouseup = onmouseup_bridge;
 
 if (document.captureEvents)
 {
-    document.captureEvents(Event.MOUSEMOVE);
+	document.captureEvents(Event.MOUSEMOVE);
 }
 
 graph.setDepthMarkers([{label: "Ceilings", depth: 1.95},
@@ -943,11 +1142,19 @@ graph.setDamageCurve({colour: "#0000ff", points: [{depth: -0.1, damage:  0, erro
 						  {depth:  0.5, damage: 15, error: 10},
 						  {depth:  0.6, damage: 35, error: 10},
 						  {depth:  1.9, damage: 45, error: 10},
-						  {depth:  2.0, damage: 95, error: 10}]});
+                                                  {depth:  2.0, damage: 95, error: 10}]});
+graph.setReferenceCurves([{colour: "#00ff00", points: [{depth: -0.15, damage:  0},
+                                                       {depth: 0.15,  damage: 12},
+                                                       {depth: 0.45,  damage: 20},
+                                                       {depth: 1.80,  damage: 90}]},
+                          {colour: "#00ffff", points: [{depth: -0.14, damage:  0},
+                                                       {depth: 0.17,  damage: 15},
+                                                       {depth: 0.50,  damage: 18},
+                                                       {depth: 1.90,  damage: 80}]}]);
 
 </script>
 </head>
-<body>
+<body oncontextmenu="return false;">
 	<noscript>
 		Your browser does not support JavaScript or support has been turned off. Sorry!
 	</noscript>
@@ -959,6 +1166,52 @@ graph.setDamageCurve({colour: "#0000ff", points: [{depth: -0.1, damage:  0, erro
 		Your browser does not support HTML5 Canvas.
 	</canvas>
 
+<!--------------------- BEGIN POPUP MENU -------------------------->
+<div id="menudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
+<table width=82 cellspacing=1 cellpadding=0 bgcolor=lightgray>
+	<tr>
+		<td>
+			<table width=80 cellspacing=0 cellpadding=0>
+				<tr>
+					<td id="item1" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 1</a></td>
+				</tr>
+				<tr>
+					<td id="item2" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 2</a></td>
+				</tr>
+				<tr>
+					<td id="item3" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 3</a></td>
+				</tr>
+				<tr>
+					<td id="item4" bgcolor="#ffffff" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 4</a></td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</div>
+<div id="augmenudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
+<table width=82 cellspacing=1 cellpadding=0 bgcolor=lightgray>
+	<tr>
+		<td>
+			<table width=80 cellspacing=0 cellpadding=0>
+				<tr>
+					<td id="item1" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 1</a></td>
+				</tr>
+				<tr>
+					<td id="item2" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 2</a></td>
+				</tr>
+				<tr>
+					<td id="item3" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 3</a></td>
+				</tr>
+				<tr>
+					<td id="item4" bgcolor="#ffffff" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 4</a></td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</div>
+<!--------------------- END POPUP MENU -------------------------->
 </body>
 </html>
 

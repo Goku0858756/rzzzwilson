@@ -108,7 +108,15 @@ class TestpyCacheBack(unittest.TestCase):
                     f.write(str(value))
 
             def _get_from_back(self, key):
-                raise KeyError
+                (x, y) = key
+                file_path = os.path.join(test_dir, str(x), str(y))
+                try:
+                    with open(file_path, 'rb') as f:
+                        value = f.read()
+                except IOError:
+                    raise KeyError, str(key)
+                return value
+
         # define utility testing function
         def check_file(self, file_path, expected_contents):
             if not os.path.isfile(file_path):
@@ -132,6 +140,10 @@ class TestpyCacheBack(unittest.TestCase):
         # add third key, flushing (1,2), check backing file still there
         a[(1,3)] = 'one, three'
         check_file(self, os.path.join(test_dir, '1', '2'), a[(1,2)])
+
+        # check that we can still get (1,2) data from backing store
+        msg = "a[(1,2)] != 'one and two'!"
+        self.assertEqual(a[(1,2)], 'one and two', msg)
 
         # delete a key, check backing file still there
         del a[(1,3)]

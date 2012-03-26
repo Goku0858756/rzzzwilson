@@ -4,9 +4,12 @@ a builtin data structure (the dictionary).
 pyCacheBack behaves like a dictionary but has an LRU mechanism [1]
 to limit the number of keys in the dictionary.  There is an optional
 'backing store' mechanism that could be used to store key/value
-pairs on disk (for instance).
+pairs on disk (for instance).  Something like this is useful in an
+application that uses OpenStreetMap tiles from the web as the tiles
+can be cached in memory for speed and saved to disk to save on web
+accesses.
 
-The ay to use the backing store is to inherit from pyCacheBack with
+The way to use the backing store is to inherit from pyCacheBack with
 overridden methods _put_to_back() and _get_from_back().  See the test
 code for an example.
 

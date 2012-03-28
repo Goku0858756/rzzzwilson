@@ -76,6 +76,9 @@ class pyCacheBack(dict):
             super(pyCacheBack, self).__delitem__(key)
         self._lru_list = self._lru_list[:self._max_lru]
 
+    #####
+    # override the following two methods to implement the backing cache
+    #####
 
     def _put_to_back(self, key, value):
         """Store 'value' in backing store, using 'key' to access."""
@@ -85,7 +88,8 @@ class pyCacheBack(dict):
     def _get_from_back(self, key):
         """Retrieve value for 'key' from backing storage.
 
-        Raises KeyError if key not in backing storage."""
+        Raises KeyError if key not in backing storage.
+        """
 
         raise KeyError
 

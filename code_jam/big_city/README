@@ -1,0 +1,7 @@
+A program to solve the Google Big City puzzle:
+
+[http://services.google.com/blog_resources/Google_CodeJam_Practice.pdf]
+
+The *.dat files are test cases.  The only test case for which the answer
+is known is 5.dat, because it's from the problem PDF.  The other *.dat
+files are randomly generated.

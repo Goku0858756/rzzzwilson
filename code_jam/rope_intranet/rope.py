@@ -7,10 +7,6 @@ Usage:  rope.py <datafile>
 """
 
 
-import log
-log = log.Log('my_log.log', log.Log.DEBUG)
-
-
 def read_dataset(fd):
     """Read one dataset from 'fd'.
 
@@ -41,11 +37,8 @@ def solve_puzzle(pair_list):
 
     while len(pair_list) > 1:
         (ll, lr) = pair_list[0]
-        log('ll=%d, lr=%d' % (ll, lr))
         for (hl, hr) in pair_list[1:]:
-            log('    hl=%d, hr=%d' % (hl, hr))
             if hr < lr:
-                log('    intersection!')
                 result += 1
         pair_list = pair_list[1:]
 
@@ -60,9 +53,6 @@ def main(N, fd):
 
     for case in xrange(N):
         (T, pair_list) = read_dataset(fd)
-        log('=' * 50)
-        log('T=%d' % T)
-        log('pair_list=%s' % str(pair_list))
         num_intersect = solve_puzzle(pair_list)
         print('Case #%d: %d' % (case+1, num_intersect))
 

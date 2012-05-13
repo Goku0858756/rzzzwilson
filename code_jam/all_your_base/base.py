@@ -6,64 +6,45 @@ A program to solve the Google All Your Base puzzle.
 Usage:  base.py <datafile>
 """
 
-import itertools
 
-
-# maximum result value
-MaxResult = 10 ** 18
-
-# maximum base allowed (as only 36 symbols)
+# maximum base allowed (as only 36 legal symbols)
 MaxBase = 36
 
-# minimum base allowed (from problem definition)
-# not sure we need this
-MinBase = 2
+# all allowable values: [1, 0, 2, 3, 4, ..., 35].
+# the idea is that the minimum value for a string is to have
+# the first symbol map to 1 (a requirement for a minimum value)
+# and each subsequent symbol comes from [0, 2, 3, 4, ...] in order.
+# this gives us a minimum value for the string.
+AllValues = range(MaxBase)[:]
+AllValues.remove(1)
+AllValues.insert(0, 1)
 
-# all allowable values
-AllValues = None
 
-
-def solve_puzzle(line):
+def solve_puzzle(string):
     """Solve the puzzle.
 
-    Returns the 'minimum value' for 'line'.
+    Returns the 'minimum value' for 'string'.
     """
 
-    # larger than biggest result
-    result = MaxResult + 1
+    # first, get minimum number of symbols in 'string'
+    # this length of the unique string sets the minimum base for the puzzle
+    unique_symbols = ''
+    for ch in string:
+        if ch not in unique_symbols:
+            unique_symbols += ch
+    base = max(2, len(unique_symbols))	# base must be at least 2 (required)
 
-    # first, get minimum number of symbols in 'line'
-    # this sets the minimum base for the line
-    unique_symbols = {}
-    for ch in line:
-        unique_symbols[ch] = True
-    unique_symbols = unique_symbols.keys()
-    min_base = len(unique_symbols)
+    # create mapping: sym -> value
+    # we know first sym in 'string' must be 1
+    # and for the following -> 0, 2, 3, 4, ..., 35
+    sym2val = dict(zip(unique_symbols, AllValues))
 
-    # generate all mappings of symbols to values
-    # generate value and keep minimum
-    for base in range(min_base, MaxBase+1):
-        perms = itertools.permutations(AllValues[:base], min_base)
-        for mapping in perms:
-            index_dir = {}
-            for ch in unique_symbols:
-                index_dir[ch] = mapping[unique_symbols.index(ch)]
+    # generate result
+    value = 0
+    for ch in string:
+        value = value*base + sym2val[ch]
 
-            if index_dir[line[0]] == 0:
-                # but first char in line can't map to 0
-                continue
-
-            value = 0
-            for ch in line:
-                ch_value = index_dir[ch]
-                value *= base
-                value += ch_value
-                if value > result:
-                    break
-            if value < result:
-                result = value
-
-    return result
+    return value
         
 def main(N, fd):
     """Solve the puzzle.
@@ -72,14 +53,10 @@ def main(N, fd):
     fd  is the open file to read datasets from
     """
 
-    # create all alowable values in a list
-    global AllValues
-    AllValues = range(MaxBase+1)[:]
-
     # solve each test case
     for case in xrange(N):
-        line = fd.readline().strip()
-        result = solve_puzzle(line)
+        string = fd.readline().strip()
+        result = solve_puzzle(string)
         print('Case #%d: %d' % (case+1, result))
 
 if __name__ == '__main__':

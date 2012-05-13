@@ -28,6 +28,8 @@
 
 <script type="text/javascript">
 
+console.debug('start');
+
 // configuration values for the GRAPH object
 
 // colours for various parts of the graph
@@ -101,6 +103,11 @@ var graphDMWidth = 0.5;			// line width in pixels
 var graphDMHSRadius = 8;		// radius in pixels of HS semicircle
 var graphDMGranule = 0.05;		// DM granularity (in metres)
 
+
+Graph.prototype.xyzzy = function()
+{
+    console.debug('test');
+}
 
 //////////////////////////////
 // Initial attempt at a 'graph' object usable by webELoss.
@@ -1045,9 +1052,15 @@ Graph.prototype.onMouseUp = function(e)
 	this.draggingDC = false;
 };
 
+Graph.prototype.xyzzy = function()
+{
+	console.debug("xyzzy");
+	(document.getElementById("Link")).onclick = function() { DoSomething(); return false; };
+}
+
 Graph.prototype.link_to_events = function()
 {
-	window.onload = function() { this.refresh(); };
+	window.onload = function() { this.xyzzy(); this.refresh(); };
 	window.onresize = function() { this.refresh(); };
 
 	document.onmousemove = this.onMouseMove;
@@ -1168,21 +1181,21 @@ graph.setReferenceCurves([{colour: "#00ff00", points: [{depth: -0.15, damage:  0
 
 <!--------------------- BEGIN POPUP MENU -------------------------->
 <div id="menudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
-<table width=82 cellspacing=1 cellpadding=0 bgcolor=lightgray>
+<table width=100 cellspacing=1 cellpadding=0 bgcolor=lightgray>
 	<tr>
 		<td>
-			<table width=80 cellspacing=0 cellpadding=0>
+			<table width=98 cellspacing=0 cellpadding=0>
 				<tr>
-					<td id="item1" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 1</a></td>
+					<td id="item1" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 1</a></td>
 				</tr>
 				<tr>
-					<td id="item2" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 2</a></td>
+					<td id="item2" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 2</a></td>
 				</tr>
 				<tr>
-					<td id="item3" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 3</a></td>
+					<td id="item3" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 3</a></td>
 				</tr>
 				<tr>
-					<td id="item4" bgcolor="#ffffff" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 4</a></td>
+					<td id="item4" bgcolor="#ffffff" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#" id="Link">Item 4</a></td>
 				</tr>
 			</table>
 		</td>
@@ -1190,21 +1203,21 @@ graph.setReferenceCurves([{colour: "#00ff00", points: [{depth: -0.15, damage:  0
 </table>
 </div>
 <div id="augmenudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
-<table width=82 cellspacing=1 cellpadding=0 bgcolor=lightgray>
+<table width=100 cellspacing=1 cellpadding=0 bgcolor=lightgray>
 	<tr>
 		<td>
-			<table width=80 cellspacing=0 cellpadding=0>
+			<table width=98 cellspacing=0 cellpadding=0>
 				<tr>
-					<td id="item1" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 1</a></td>
+					<td id="item1" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 1</a></td>
 				</tr>
 				<tr>
-					<td id="item2" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 2</a></td>
+					<td id="item2" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 2</a></td>
 				</tr>
 				<tr>
-					<td id="item3" bgcolor="#FFFFFF" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 3</a></td>
+					<td id="item3" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 3</a></td>
 				</tr>
 				<tr>
-					<td id="item4" bgcolor="#ffffff" width="80" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 4</a></td>
+					<td id="item4" bgcolor="#ffffff" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 4</a></td>
 				</tr>
 			</table>
 		</td>

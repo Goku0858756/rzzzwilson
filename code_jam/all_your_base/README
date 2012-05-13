@@ -6,3 +6,7 @@ The small.in file is the example from the above page.
 
 The other test files are A-small-practice.in and A-large-practice.in
 from the above page.
+
+Both A-small-practice.in and A-large-practice.in pass.
+
+Doing 'make test' runs both Google test cases and captures the output.

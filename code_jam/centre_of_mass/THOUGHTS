@@ -1,0 +1,43 @@
+The first thing that comes to mind is that the centre of mass of a swarm
+of particles each moving with constant velocity is itself constant.  That
+is, the centre of mass of the swarm has constant speed and direction
+(a straight line).
+
+So all we need to do is determine the (x, y, z, vx, vy, vz) values for
+the swarm centre of mass at time T=0, determine the point of closest
+aproach to (0, 0, 0) and then calculate the time at which that happens.
+
+Sounds simple.  Too simple?
+
+If we get a result for t_min negative, return the initial cofm distance
+and time 0.0.
+
+Calculate the cofm vx, vy, vz by stepping each firefly 1.0 seconds in time,
+calculating the new position, recalculate new cofm position, thereby
+getting cofm velocity.  There should be a formulaic solution to this!?
+
+Formulaic solution
+------------------
+We have position and velocities of all fireflies at time 0.
+
+Calculate CofM of mass at time 0:
+c0 = average(sum(c0x)), ...
+
+Calculate CofM velocity at time 0:
+cv0 = average(sum(cv0x), ...
+
+Figure out time at which CofM will strike a boundary, ie, time tb at which
+any coordinate goes to 5000 or -5000.
+
+Calculate CofM position at time tb: cb
+
+Using the algorithm at
+[http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html]
+calculate the time tc of closest approach to the origin.
+x1 is c0
+x2 is cb
+x0 is origin
+
+Calculate the position of CofM at time tc.
+
+Calculate the distance from the origin at time tc.

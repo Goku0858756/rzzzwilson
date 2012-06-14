@@ -181,6 +181,9 @@ if __name__ == '__main__':
                 numbers = [int(x) for x in numbers]
                 target = numbers.pop(6)
                 puzzle.append([numbers, target])
+    else:
+        print __doc__
+        sys.exit(10)
 
     closest = 99999999
     closest_num = None

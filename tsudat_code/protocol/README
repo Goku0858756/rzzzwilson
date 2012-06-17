@@ -1,0 +1,5 @@
+An example of an enum in python.
+
+The example code could be used in the AIFDR reincarnation
+of TsuDAT.  Would be used to create data that tells another
+party how to access a fileset.

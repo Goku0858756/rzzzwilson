@@ -3,13 +3,14 @@
 <head>
 <title>Basic Graph test</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+
 <style type="text/css">
 .annotation {font:14px/16px Arial,Helvetica,sans-serif;
 	     border:solid 1px #666666;
 	     border-radius: 5px;
 	     width:150px;
 	     height:15px;
-	     padding:1px;
+	     padding:3px;
 	     position:absolute;
 	     z-index:100;
 	     visibility:hidden;
@@ -24,6 +25,14 @@
 #t3 {font:bold 14pt verdana,arial,sans-serif;
      background-color:#ffcccc;
      layer-background-color:#ffcccc;} 
+
+.cmenu {margin: 0; padding: 0.3em; list-style-type: none; background-color: white;}
+.cmenu li:hover {}
+.cmenu hr {border: 0; border-bottom: 1px solid grey; margin: 3px 0px 3px 0px; width: 10em;}
+.cmenu a {border: 0 !important;}
+.cmenu a:hover {text-decoration: underline !important;}
+.cmenu .topSep {font-size: 90%; border-top: 1px solid gray; margin-top: 0.3em; padding-top: 0.3em;}
+
 </style>
 
 <script type="text/javascript">
@@ -103,11 +112,6 @@ var graphDMWidth = 0.5;			// line width in pixels
 var graphDMHSRadius = 8;		// radius in pixels of HS semicircle
 var graphDMGranule = 0.05;		// DM granularity (in metres)
 
-
-Graph.prototype.xyzzy = function()
-{
-    console.debug('test');
-}
 
 //////////////////////////////
 // Initial attempt at a 'graph' object usable by webELoss.
@@ -750,7 +754,7 @@ Graph.prototype.getGraphCoordString = function()
 // Handle the "mouse move" event.
 Graph.prototype.onMouseMove = function(e)
 {
-	var force_refresh = false;	// we may need to refresg the display
+	var force_refresh = false;	// we may need to refresh the display
 
 	// get mouse position on canvas
 	if (e.pageX || e.pageY)
@@ -786,15 +790,15 @@ Graph.prototype.onMouseMove = function(e)
 		this.DMHSx = Math.min(this.DMHSx, (leftMargin+this.graphXLength));
 
 		// update annotation text
-		annotateReplace(this.nameOfTipsDIV, old_label + ": depth " + dm_x.toFixed(2) + "m");
+		this.annotateReplace(this.nameOfTipsDIV, old_label + ": depth " + dm_x.toFixed(2) + "m");
 
 		// move annotation if cursor close
 		var graphPixCoord = this.xScreenCoord - leftMargin;
 
 		if (graphPixCoord < this.graphXLength/4)
-			annotateMove(this.nameOfTipsDIV, leftMargin+this.graphXLength-graphAnnotateWidth-20);
+			this.annotateMove(this.nameOfTipsDIV, leftMargin+this.graphXLength-graphAnnotateWidth-20);
 		else if (graphPixCoord > 3*this.graphXLength/4)
-			annotateMove(this.nameOfTipsDIV, leftMargin+20);
+			this.annotateMove(this.nameOfTipsDIV, leftMargin+20);
 
 		// force a redraw to show changed DM
 		force_refresh = true;
@@ -836,15 +840,15 @@ Graph.prototype.onMouseMove = function(e)
 		this.DCHSy = Math.min(this.DCHSy, (topMargin+this.graphYLength));
 
 		// update annotation text
-		annotateReplace(this.nameOfTipsDIV, "point: depth " + dc_x.toFixed(2) + "m");
+		this.annotateReplace(this.nameOfTipsDIV, "point: depth " + dc_x.toFixed(2) + "m");
 
 		// move annotation if cursor close
 		var graphPixCoord = this.xScreenCoord - leftMargin;
 
 		if (graphPixCoord < this.graphXLength/4)
-			annotateMove(this.nameOfTipsDIV, leftMargin+this.graphXLength-graphAnnotateWidth-20);
+			this.annotateMove(this.nameOfTipsDIV, leftMargin+this.graphXLength-graphAnnotateWidth-20);
 		else if (graphPixCoord > 3*this.graphXLength/4)
-			annotateMove(this.nameOfTipsDIV, leftMargin+20);
+			this.annotateMove(this.nameOfTipsDIV, leftMargin+20);
 
 		// force a redraw to show changed DC
 		force_refresh = true;
@@ -918,7 +922,11 @@ Graph.prototype.onMouseMove = function(e)
 // Handle the "mouse down" event.
 Graph.prototype.onMouseDown = function(e)
 {
-	// remember if left button was pressed (TODO: MAKE PORTABLE)
+	// hide any previous menu
+	this.hideNormalMenu(e);
+	this.hideAugmentedMenu(e);
+
+	// remember which button was pressed (TODO: MAKE PORTABLE)
 	this.leftButtonDown = (e.button == 0);
 	this.rightButtonDown = (e.button == 2);
 
@@ -926,6 +934,7 @@ Graph.prototype.onMouseDown = function(e)
 	this.draggingDM = (this.DMHotspotShowing && this.leftButtonDown);
 	this.draggingDC = (this.DCHotspotShowing && this.leftButtonDown);
 
+	// if on a 'new' DC hotspot, create new graph point, allow drag
 	if (this.DCNewHotspotShowing && this.leftButtonDown)
 	{
 		// create new DC point
@@ -949,23 +958,24 @@ Graph.prototype.onMouseDown = function(e)
 		var dm = this.DepthMarkerArray[this.DMHSIndex];
 		var x_posn = leftMargin + 20;
 
-		annotateReplace(this.nameOfTipsDIV, dm.label + ": depth " + dm.depth.toFixed(2) + "m");
+		this.annotateReplace(this.nameOfTipsDIV, dm.label + ": depth " + dm.depth.toFixed(2) + "m");
 		if ((this.xScreenCoord - leftMargin) < this.graphXLength/2)
 			x_posn = leftMargin+this.graphXLength-graphAnnotateWidth-20;
-		annotate_show(this.nameOfTipsDIV, x_posn, topMargin+20);
+		this.annotate_show(this.nameOfTipsDIV, x_posn, topMargin+20);
 	}
 	else if (this.draggingDC)		// if we are dragging a DC point
 	{
 		var point = this.DamageCurve.points[this.DCHSIndex];
 		var x_posn = leftMargin + 20;
 
-		annotateReplace(this.nameOfTipsDIV, "point: depth " + point.depth.toFixed(2) + "m");
+		this.annotateReplace(this.nameOfTipsDIV, "point: depth " + point.depth.toFixed(2) + "m");
 		if ((this.xScreenCoord - leftMargin) < this.graphXLength/2)
 			x_posn = leftMargin+this.graphXLength-graphAnnotateWidth-20;
-		annotate_show(this.nameOfTipsDIV, x_posn, topMargin+20);
+		this.annotate_show(this.nameOfTipsDIV, x_posn, topMargin+20);
 	}
 	else if (this.rightButtonDown)
 	{
+		// show required menu
 		if (this.DCHotspotShowing)
 		{
 			this.showAugmentedMenu(e);
@@ -974,11 +984,6 @@ Graph.prototype.onMouseDown = function(e)
 		{
 			this.showNormalMenu(e);
 		}
-	}
-	else
-	{
-		this.hideNormalMenu(e);
-		this.hideAugmentedMenu(e);
 	}
 };
 
@@ -994,17 +999,17 @@ Graph.prototype.showNormalMenu = function(e)
 	menu.style.visibility="visible";
         menu.style.display = "";
 
-        document.getElementById('item1').style.backgroundColor='#FFFFFF';
-        document.getElementById('item2').style.backgroundColor='#FFFFFF';
-        document.getElementById('item3').style.backgroundColor='#FFFFFF';
-        document.getElementById('item4').style.backgroundColor='#FFFFFF';
+        document.getElementById('menuDM').style.backgroundColor='#FFFFFF';
+        document.getElementById('menuRC').style.backgroundColor='#FFFFFF';
+	document.getElementById("menuDM").onclick = this.manageDM;
+        console.debug("Set menuDM.onclick to this.manageDM");
 
         return false;
 };
 
 Graph.prototype.showAugmentedMenu = function(e)
 {
-	var menu = document.getElementById('augmenudiv');
+	var menu = document.getElementById('pointmenudiv');
 
         //menu.style.left = e.layerX+'px';
         //menu.style.top = e.layerY+'px';
@@ -1014,10 +1019,10 @@ Graph.prototype.showAugmentedMenu = function(e)
 	menu.style.visibility="visible";
         menu.style.display = "";
 
-        document.getElementById('item1').style.backgroundColor='#FFFFFF';
-        document.getElementById('item2').style.backgroundColor='#FFFFFF';
-        document.getElementById('item3').style.backgroundColor='#FFFFFF';
-        document.getElementById('item4').style.backgroundColor='#FFFFFF';
+        document.getElementById('menuEdit').style.backgroundColor='#FFFFFF';
+        document.getElementById('menuDelete').style.backgroundColor='#FFFFFF';
+        document.getElementById('menuDM').style.backgroundColor='#FFFFFF';
+        document.getElementById('menuRC').style.backgroundColor='#FFFFFF';
 
         return false;
 };
@@ -1031,7 +1036,7 @@ Graph.prototype.hideNormalMenu = function(e)
 
 Graph.prototype.hideAugmentedMenu = function(e)
 {
-	var menu = document.getElementById('augmenudiv');
+	var menu = document.getElementById('pointmenudiv');
 
 	menu.style.visibility="hidden";
 }
@@ -1041,7 +1046,7 @@ Graph.prototype.onMouseUp = function(e)
 	// remove any annotation
 	if (this.draggingDM || this.draggingDC)
 	{
-		annotate_hide(this.nameOfTipsDIV);
+		this.annotate_hide(this.nameOfTipsDIV);
 		// if we were dragging a DC point, create new list of "new points"
 		if (this.draggingDC)
 			this.makeDCNewPoints();
@@ -1052,20 +1057,21 @@ Graph.prototype.onMouseUp = function(e)
 	this.draggingDC = false;
 };
 
-Graph.prototype.xyzzy = function()
+Graph.prototype.manageDM = function()
 {
-	console.debug("xyzzy");
-	(document.getElementById("Link")).onclick = function() { DoSomething(); return false; };
-}
+	console.debug('manageDM');
+};
 
 Graph.prototype.link_to_events = function()
 {
-	window.onload = function() { this.xyzzy(); this.refresh(); };
+	window.onload = function() { this.refresh(); };
 	window.onresize = function() { this.refresh(); };
 
 	document.onmousemove = this.onMouseMove;
 	document.onmousedown = this.onMouseDown;
 	document.onmouseup = this.onMouseUp;
+
+        console.debug("link_to_events: called");
 };
 
 ////////////////////////////////////////////////////////////////
@@ -1074,7 +1080,7 @@ Graph.prototype.link_to_events = function()
 // Simple dynamic annotation
 //
 
-function annotate_show(dom_obj, x, y)
+Graph.prototype.annotate_show = function(dom_obj, x, y)
 {
        	var element = document.getElementById(dom_obj);
        	var style = element.style;
@@ -1086,7 +1092,7 @@ function annotate_show(dom_obj, x, y)
        	style.visibility = "visible";
 };
 
-function annotate_hide(dom_obj)
+Graph.prototype.annotate_hide = function(dom_obj)
 {
        	var element = document.getElementById(dom_obj);
        	var style = element.style;
@@ -1095,7 +1101,7 @@ function annotate_hide(dom_obj)
        	style.visibility = "hidden";
 };
 
-function annotateReplace(dom_obj, new_text)
+Graph.prototype.annotateReplace = function(dom_obj, new_text)
 {
        	var element = document.getElementById(dom_obj);
 
@@ -1103,7 +1109,7 @@ function annotateReplace(dom_obj, new_text)
 }
 
 // move annotation box to new X position
-function annotateMove(dom_obj, new_x)
+Graph.prototype.annotateMove = function(dom_obj, new_x)
 {
        	var element = document.getElementById(dom_obj);
 	var style = element.style;
@@ -1114,6 +1120,12 @@ function annotateMove(dom_obj, new_x)
 
 // tell javascript library the name of the graph canvas & annotation div we are using
 graph = new Graph("graph", "annotation");
+
+function onload_bridge(e)
+{
+	doOnLoad();
+	graph.refresh(e);
+}
 
 function refresh_bridge(e)
 {
@@ -1135,7 +1147,7 @@ function onmouseup_bridge(e)
 	graph.onMouseUp(e);
 }
 
-window.onload = refresh_bridge;
+window.onload = onload_bridge;
 window.onresize = refresh_bridge;
 
 document.onmousemove = onmousemove_bridge;
@@ -1165,8 +1177,16 @@ graph.setReferenceCurves([{colour: "#00ff00", points: [{depth: -0.15, damage:  0
                                                        {depth: 0.50,  damage: 18},
                                                        {depth: 1.90,  damage: 80}]}]);
 
+function doOnLoad()
+{
+	document.getElementById("menuDM").onclick = this.manageDM;
+
+	console.debug('doOnLoad');
+};
+
 </script>
 </head>
+<!-- oncontextmenu="return false;" turns off the browser context menu -->
 <body oncontextmenu="return false;">
 	<noscript>
 		Your browser does not support JavaScript or support has been turned off. Sorry!
@@ -1180,44 +1200,43 @@ graph.setReferenceCurves([{colour: "#00ff00", points: [{depth: -0.15, damage:  0
 	</canvas>
 
 <!--------------------- BEGIN POPUP MENU -------------------------->
-<div id="menudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
-<table width=100 cellspacing=1 cellpadding=0 bgcolor=lightgray>
+<div id="menudiv" class="cmenu" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
+
+<table width=250 cellspacing=1 cellpadding=2 bgcolor=lightgray>
 	<tr>
 		<td>
-			<table width=98 cellspacing=0 cellpadding=0>
+			<table width=248 cellspacing=0 cellpadding=0>
 				<tr>
-					<td id="item1" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 1</a></td>
+					<td id="menuDM" bgcolor="#FFFFFF" width="248" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Manage Depth Markers</a></td>
 				</tr>
 				<tr>
-					<td id="item2" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 2</a></td>
-				</tr>
-				<tr>
-					<td id="item3" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Item 3</a></td>
-				</tr>
-				<tr>
-					<td id="item4" bgcolor="#ffffff" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#" id="Link">Item 4</a></td>
+					<td id="menuRC" bgcolor="#FFFFFF" width="248" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Manage Reference Curve</a></td>
 				</tr>
 			</table>
 		</td>
 	</tr>
 </table>
+
 </div>
-<div id="augmenudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
-<table width=100 cellspacing=1 cellpadding=0 bgcolor=lightgray>
+<div id="pointmenudiv" style="position:absolute; display:none; top:0px; left:0px;z-index:10000;" onmouseover="javascript:overpopupmenu=true;" onmouseout="javascript:overpopupmenu=false;">
+<table width=250 cellspacing=1 cellpadding=2 bgcolor=lightgray>
 	<tr>
 		<td>
-			<table width=98 cellspacing=0 cellpadding=0>
+			<table width=248 cellspacing=0 cellpadding=0>
 				<tr>
-					<td id="item1" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 1</a></td>
+					<td id="menuEdit" bgcolor="#FFFFFF" width="248" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Edit point</a></td>
 				</tr>
 				<tr>
-					<td id="item2" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 2</a></td>
+					<td id="menuDelete" bgcolor="#FFFFFF" width="248" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Delete point</a></td>
 				</tr>
 				<tr>
-					<td id="item3" bgcolor="#FFFFFF" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 3</a></td>
+					<td id="itemsep" bgcolor="#FFFFFF" width="248" height="2"><hr></td>
 				</tr>
 				<tr>
-					<td id="item4" bgcolor="#ffffff" width="98" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">augItem 4</a></td>
+					<td id="menuDM2" bgcolor="#FFFFFF" width="248" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Manage Depth Markers</a></td>
+				</tr>
+				<tr>
+					<td id="menuRC2" bgcolor="#ffffff" width="248" height="16" onMouseOver="this.style.backgroundColor='#EFEFEF'" onMouseOut="this.style.backgroundColor='#FFFFFF'"><a href="#">Manage Reference Curve</a></td>
 				</tr>
 			</table>
 		</td>

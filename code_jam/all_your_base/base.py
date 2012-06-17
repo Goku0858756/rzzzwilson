@@ -6,6 +6,20 @@ A program to solve the Google All Your Base puzzle.
 Usage:  base.py <datafile>
 """
 
+# determine if we are running under kernprof
+# define dummy @profile if not
+def fake_profile(fn):
+    def wrapped(*args, **kwargs):
+        return fn(*args, **kwargs)
+    return wrapped
+
+try:
+    if not __builtins__.has_key('profile'):
+        print("REDEFINING......")
+        profile = fake_profile
+except AttributeError:
+    print("REDEFINING......")
+    profile = fake_profile
 
 # maximum base allowed (as only 36 legal symbols)
 MaxBase = 36
@@ -19,7 +33,7 @@ AllValues = range(MaxBase)[:]
 AllValues.remove(1)
 AllValues.insert(0, 1)
 
-
+@profile
 def solve_puzzle(string):
     """Solve the puzzle.
 

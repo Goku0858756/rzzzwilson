@@ -45,12 +45,16 @@ if __name__ == '__main__':
         print __doc__
         sys.exit(10)
 
+    print '     fibonacci(%d) =' % number,
+    sys.stdout.flush()
     start = time.time()
     result = fibonacci(number)
     delta = time.time() - start
-    print('     fibonacci(%d)=%d   took %9.6fs' % (number, result, delta))
+    print '%d   took %9.6fs' % (result, delta)
 
+    print 'fibonacci_memo(%d) =' % number,
+    sys.stdout.flush()
     start = time.time()
     result = fibonacci_memo(number)
     delta = time.time() - start
-    print('fibonacci_memo(%d)=%d   took %9.6fs' % (number, result, delta))
+    print '%d   took %9.6fs' % (result, delta)

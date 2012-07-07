@@ -1,0 +1,242 @@
+#!/usr/bin/python 
+
+"""
+The Python Imlac emulator (pymlac).
+"""
+
+import sys
+import getopt
+import pygame
+from pygame.locals import *
+
+from Globals import *
+import Imlac
+import Trace
+
+
+def handle_options():
+    """Routine to analyse command line options.
+
+    Sets globals to input values.
+    """
+
+    global boot_rom
+    global loadfile
+    global corefile
+    global tracing
+    global tracestart
+    global traceend
+    global run_address
+
+    try:
+        opts, pargs = getopt.gnu_getopt(sys.argv[1:], 'b:cr:t:?')
+    except getopt.GetoptError, e:
+        print e, '\n'
+        usage()
+
+    errors= 0
+
+    for opt, arg in opts:
+        if opt == "-b":
+            if arg == 'ptr':
+                boot_rom = ROM_PTR
+            elif arg == 'tty':
+                boot_rom = ROM_TTY
+            else:
+                print "'-b' option must be followed by 'ptr' or 'tty'"
+                errors = 1
+        elif opt == "-c":
+            corefile = None
+        elif opt == '-r':
+            if len(arg) <= 0:
+                print "'-r' must be followed by a run address in octal"
+                errors = 1
+            else:
+                if run_address == None:
+                    try:
+                        run_address = int(arg, 8)
+                    except:
+                        print "'-r' must be followed by a run address in octal"
+                        errors = 1
+                else:
+                    print "there can be only one '-r' option"
+                    errors = 1
+        elif opt == '-t':
+            splitarg = arg.split(',')
+            if len(splitarg) == 1:
+                tracestart = int(splitarg[0], 8)
+            elif len(splitarg) == 2:
+                tracestart = int(splitarg[0], 8)
+                traceend = int(splitarg[1], 8)
+            else:
+                print "'-t' must be followed by 1 or 2 addresses"
+                errors = 1
+        elif opt == "-?":
+            usage()
+
+    if len(pargs) > 1:
+        print 'only one file may be specified'
+        errors = 1
+
+    if errors:
+        print ''
+        usage()
+
+    if len(pargs) > 0:
+        loadfile = pargs[0]
+
+    print('handle_options: loadfile=%s' % loadfile)
+    print('handle_options: boot_rom=%s' % str(boot_rom))
+    print('handle_options: tracestart=%s' % str(tracestart))
+    print('handle_options: traceend=%s' % str(traceend))
+
+
+def syserror(msg):
+    """Report a system error."""
+
+    print msg
+    sys.exit()
+
+
+def usage():
+    """Help for befuddled user."""
+
+    print 'usage: pymlac [-b (ptr|tty)] [-c] [-t [<a>[,<b>]]] [<imlacfile>] [-r <address>]'
+    print 'where -b (ptr|tty)         sets the boot code and input device (ptr or tty)'
+    print "      -c                   don't read the core save file"
+    print '      -r <address>         sets the subsequent run address'
+    print '      -t <addr1>[,<addr2>] controls trace:'
+    print '                             -t 100     trace from address 0100'
+    print '                             -t 100,200 traces between addresses 100 and 200'
+    print 'and   <imlacfile>          is the file to mount on the input device (ptr or tty)'
+    sys.exit()
+
+
+# set defaults
+boot_rom = ROM_PTR
+run_address = None
+loadfile = None
+corefile = CORE_FILENAME
+tracing = False
+tracestart = None
+traceend = None
+
+
+def main():
+    """Start of the Imlac emulator."""
+
+    global boot_rom
+    global loadfile
+    global corefile
+    global tracing
+    global tracestart
+    global traceend
+    global run_address
+
+    handle_options()
+
+    ######
+    # Initialize the emulator.
+    ######
+
+    pygame.init()
+
+    screen = pygame.display.set_mode((1280,1024), HWSURFACE|DOUBLEBUF)
+
+    imlac = Imlac.Imlac(run_address, screen, TRACE_FILENAME, tracestart,
+                        traceend, boot_rom, corefile)
+
+    # mount the file, if it was specified
+    print('main: loadfile=%s' % str(loadfile))
+    if loadfile:
+        print('loadfile=%s' % loadfile)
+        print('loadfile=%s' % loadfile)
+        try:
+            if boot_rom == ROM_PTR:
+                print('calling imlac.ptr_mount(%s)' % loadfile)
+                imlac.ptr_mount(loadfile)
+                print 'loaded file %s' % loadfile
+            else:
+                imlac.ttyin_mount(loadfile)
+        except IOError, e:
+            print e
+            sys.exit()
+    else:
+        print 'no loadfile'
+
+    update_count = 0
+    while 1:
+#        pygame.event.pump()
+#        for event in pygame.event.get():
+#            print 'pygame event: %s' % str(event)
+#            if (event.type == MOUSEBUTTONUP):
+#                pygame.quit()
+#                imlac.close(corefile)
+#                sys.exit()
+#            if (event.type == IMLAC_EVENT):
+#                if event.dict["device"] == 'display':
+#                    if event.dict["op"] == 'drawline':
+#                        startposn = event.dict["startposn"]
+#                        endposn = event.dict["endposn"]
+#                        screen.drawline(startposn, endposn)
+#                    else:
+#                        syserror('Bad event')
+#                elif event.dict["device"] == 'ptr':
+#                    if event.dict["op"] == 'on':
+#                        screen.ptr_on()
+#                    elif event.dict["op"] == 'off':
+#                        screen.ptr_off()
+#                    elif event.dict["op"] == 'eof':
+#                        print 'EOF on PTR'
+#                        screen.ptr_eof()
+#                elif event.dict["device"] == 'ptp':
+#                    if event.dict["op"] == 'on':
+#                        screen.ptp_on()
+#                    elif event.dict["op"] == 'off':
+#                        screen.ptp_off()
+#                    elif event.dict["op"] == 'eof':
+#                        screen.ptp_eof()
+#                    else:
+#                        syserror('Bad event')
+#                elif event.dict["device"] == 'ttyin':
+#                    if event.dict["op"] == 'on':
+#                        screen.ttyin_on()
+#                    elif event.dict["op"] == 'off':
+#                        screen.ttyin_off()
+#                    elif event.dict["op"] == 'eof':
+#                        screen.ttyin_eof()
+#                    else:
+#                        syserror('Bad event')
+#                elif event.dict["device"] == 'ttyout':
+#                    if event.dict["op"] == 'on':
+#                        screen.ttyout_on()
+#                    elif event.dict["op"] == 'off':
+#                        screen.ttyout_off()
+#                    else:
+#                        syserror('Bad event')
+#                elif event.dict["device"] == 'system':
+#                    if event.dict["op"] == 'quit':
+#                        print 'pymlac: closing'
+#                        imlac.close(corefile)
+#                        sys.exit()
+#                    else:
+#                        syserror('Bad event')
+#                else:
+#                    syserror('Bad event')
+
+        imlac.pump()
+
+#        update_count += 1
+#        if update_count >= 100:
+#            update_count = 0
+#            pygame.display.flip()
+        if imlac.execute_once() == 0:
+            break
+
+    pygame.quit()
+    imlac.close(corefile)
+
+#import profile
+#profile.run('main()', 'profile.out')
+
+main()

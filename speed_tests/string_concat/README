@@ -1,0 +1,29 @@
+If you read the Python programming blogs or google for "python string
+concatenation" you find some statements that the naive 'a += b' method
+of concatenating strings is slow and uses too much memory.
+
+The code here tests the speeds of various methods of concatenating
+strings under Python 2.7:
+
+naive          the old a += b method
+array          using the array module .join() method
+join           using the list object .join() method
+stringio       concatenating in a StringIO object
+comprehension  creating a string with comprehension
+
+An additional method using mutable strings was tried, but it was so
+slow it isn't tested.
+
+Surprisingly, the old, loathed a += b method is faster than the
+list comprehension plus .join() method.  The only other method that
+is as fast as the naive method is the comprehension method but
+that is not generally useful.
+
+The big surprise is memory usage.  The results.png graph shows a
+crude graph of memory usage versus time.  It shows that the naive
+method uses *much* less RAM than most other methods.  The only other
+method that comes close is the stringio method which is more complicated
+and slightly slower.
+
+So the naive method is probably best for common cases.  It's simpler
+as well.

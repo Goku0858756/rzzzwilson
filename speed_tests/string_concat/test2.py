@@ -10,7 +10,7 @@ from array import array
 from cStringIO import StringIO
 
 
-TIMES = 100000
+TIMES = 200000
 
 
 def concat_naive_func(a, n):

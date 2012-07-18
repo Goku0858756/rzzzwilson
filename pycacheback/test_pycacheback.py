@@ -30,7 +30,7 @@ class TestpyCacheBack(unittest.TestCase):
         self.assertEqual(len(a), 1, msg)
 
     def testDict(self):
-        """Test the dictionary methods that should still be working."""
+        """Test the basic dictionary methods that should still work."""
 
         # make an extended dictionary and define some key/value pairs
         a = pyCacheBack()
@@ -124,11 +124,14 @@ class TestpyCacheBack(unittest.TestCase):
         msg = "len(a) should be 0, got %d!" % len(a)
         self.assertEqual(len(a), 0, msg)
 
-        # add a key/value pair, recheck LRU
+        # add a key/value pair, recheck LRU and length
         a['test'] = 'test value'
         msg = ("LRU list should be %s, but it's %s"
                % (str(['test']), str(a._lru_list)))
         self.assertEqual(a._lru_list, ['test'], msg)
+
+        msg = "len(a) should be 1, got %d!" % len(a)
+        self.assertEqual(len(a), 1, msg)
 
         # add another key/value pair, recheck LRU
         a['test2'] = 'another test value'
@@ -152,7 +155,7 @@ class TestpyCacheBack(unittest.TestCase):
                % (str(['test3', 'test']), str(a._lru_list)))
         self.assertEqual(a._lru_list, ['test3', 'test'], msg)
 
-        # make sure the len() function works correctly
+        # make sure the len() function works correctly (still 2)
         msg = "len(a) should be 2, got %d!" % len(a)
         self.assertEqual(len(a), 2, msg)
 
@@ -170,7 +173,7 @@ class TestpyCacheBack(unittest.TestCase):
         """Test the backing mechanism.  Keys will be (x, y) form."""
 
         # create the test directory
-        test_dir = './test_dir'
+        test_dir = './_#test_dir#_'
         shutil.rmtree(test_dir, ignore_errors=True)
         os.mkdir(test_dir)
 

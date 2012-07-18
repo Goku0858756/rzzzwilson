@@ -72,9 +72,13 @@ class pyCacheBack(dict):
     def _enforce_lru_size(self):
         """Enforce LRU size limit in cache dictionary."""
 
-        for key in self._lru_list[self._max_lru:]:
-            super(pyCacheBack, self).__delitem__(key)
-        self._lru_list = self._lru_list[:self._max_lru]
+        # if a limit was defined and we have blown it
+        if self._max_lru and len(self) > self._max_lru:
+            # make sure in-memory dictionary doesn't get bigger
+            for key in self._lru_list[self._max_lru:]:
+                super(pyCacheBack, self).__delitem__(key)
+            # also truncate the LRU list
+            self._lru_list = self._lru_list[:self._max_lru]
 
     #####
     # override the following two methods to implement the backing cache

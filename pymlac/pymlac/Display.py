@@ -21,19 +21,19 @@ class Display(object):
         self.cycle_count = 0
         self.display = pygame.Surface((1024, 1024))
         self.Sync40hz = 1
-        self.display.fill((0,0,0))
+        self.display.fill((0, 0, 0))
 
     def draw(self, dotted, oldx, oldy, x, y):
         oldx %= 1024
         oldy %= 1024
         x %= 1024
         y %= 1024
-        pygame.draw.line(self.display, YELLOW, (oldx,1024-oldy), (x,1024-y))
+        pygame.draw.line(self.display, YELLOW, (oldx, 1024 - oldy), (x, 1024 - y))
 
     def flip(self):
-        self.screen.blit(self.display, (0,0))
+        self.screen.blit(self.display, (0, 0))
         pygame.display.flip()
-        self.display.fill((0,0,0))
+        self.display.fill((0, 0, 0))
 
     def syncclear(self):
         self.Sync40hz = 0
@@ -46,4 +46,3 @@ class Display(object):
         self.cycle_count -= cycles
         if self.cycle_count <= 0:
             self.Sync40hz = 1
-

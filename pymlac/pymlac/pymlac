@@ -160,9 +160,8 @@ def main():
     else:
         print 'no loadfile'
 
-    update_count = 0
     while True:
-        imlac.pump()
+#        imlac.pump()
 
         if imlac.execute_once() == 0:
             break

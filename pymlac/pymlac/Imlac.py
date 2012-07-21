@@ -71,8 +71,8 @@ class Imlac(object):
     def ptp_dismount(self):
         self.ptp.dismount()
 
-    def pump(self):
-        pass
+#    def pump(self):
+#        pass
 #        self.panel.updateAC(MainCPU.AC)
 #        self.panel.updatePC(MainCPU.PC)
 
@@ -112,7 +112,8 @@ class Imlac(object):
     def run(self, pc=None):
         self.running = 1
         if not pc is None:
-            regs.pc = MEMORY_MASK(pc)
+            #regs.pc = MEMORY_MASK(pc)
+            regs.pc = pc
 
     def __tick_all(self, cycles):
         self.ptr.tick(cycles)
@@ -141,5 +142,8 @@ class Imlac(object):
         self.trace.itraceend(self.displaycpu.ison())
 
         self.__tick_all(instruction_cycles)
+
+        if not self.displaycpu.ison() and not self.main.running:
+            return 0
 
         return instruction_cycles

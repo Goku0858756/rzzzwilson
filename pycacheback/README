@@ -14,3 +14,4 @@ overridden methods _put_to_back() and _get_from_back().  See the test
 code for an example.
 
 [1] http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used
+

@@ -86,12 +86,13 @@ class MainCPU(object):
         global PC
 
         if not self.running:
+            print('MainCPU halted')
             return 0
 
         global BlockBase
 
         # get instruction word to execute, advance PC
-        instruction = self.memory.get(PC, 0)
+        instruction = self.memory.get(PC, False)
         BlockBase = PC & ADDRHIGHMASK
         PC = MASK_MEM(PC + 1)
 
@@ -270,7 +271,7 @@ class MainCPU(object):
         cycles = 3 if indirect else 2
 
         value = (self.memory.get(address, indirect) + 1) & WORDMASK
-        self.memory.put(value, address, 0)
+        self.memory.put(value, address, False)
         if value == 0:
             PC = (PC + 1) & WORDMASK
         self.trace.itrace('ISZ', indirect, address)
@@ -283,7 +284,7 @@ class MainCPU(object):
 
         jmpaddr = self.EFFADDR(address)
         if indirect:
-            jmpaddr = self.memory.get(jmpaddr, 0)
+            jmpaddr = self.memory.get(jmpaddr, False)
         PC = jmpaddr & PCMASK
 
         self.trace.itrace('JMP', indirect, address)
@@ -295,8 +296,8 @@ class MainCPU(object):
         cycles = 3 if indirect else 2
         jmsaddr = self.EFFADDR(address)
         if indirect:
-            jmsaddr = self.memory.get(jmsaddr, 0)
-        self.memory.put(PC, jmsaddr, 0)
+            jmsaddr = self.memory.get(jmsaddr, False)
+        self.memory.put(PC, jmsaddr, False)
         PC = (jmsaddr + 1) & PCMASK
         self.trace.itrace('JMS', indirect, address)
         return cycles
@@ -483,8 +484,8 @@ class MainCPU(object):
         cycles = 3 if indirect else 2
         samaddr = self.EFFADDR(address)
         if indirect:
-            samaddr = self.memory.get(samaddr, 0)
-        if AC == self.memory.get(samaddr, 0):
+            samaddr = self.memory.get(samaddr, False)
+        if AC == self.memory.get(samaddr, False):
             PC = (PC + 1) & PCMASK
         self.trace.itrace('SAM', indirect, address)
         return cycles
@@ -525,8 +526,8 @@ class MainCPU(object):
         cycles = 3 if indirect else 2
         effaddr = self.EFFADDR(address)
         if indirect:
-            effaddr = self.memory.get(effaddr, 0)
-        AC = (AC - self.memory.get(effaddr, 0)) & WORDMASK
+            effaddr = self.memory.get(effaddr, False)
+        AC = (AC - self.memory.get(effaddr, False)) & WORDMASK
         self.trace.itrace('SUB', indirect, address)
         return cycles
 
@@ -567,9 +568,9 @@ class MainCPU(object):
 
         cycles = 3 if indirect else 2
         if indirect:
-            address = self.memory.get(address, 0)
-        tmp = self.memory.get(address, 0)
-        self.memory.put(AC, address, 0)
+            address = self.memory.get(address, False)
+        tmp = self.memory.get(address, False)
+        self.memory.put(AC, address, False)
         AC = tmp
         self.trace.itrace('XAM', indirect, address)
         return cycles
@@ -585,7 +586,7 @@ class MainCPU(object):
     # this is fiddly because we want to trace the single operation opcoded instructions
     # *and* the encoded multiple non-opcoded instructions sensibly.
     def micro(self, instruction):
-        global AC, L
+        global PC, AC, L
 
         if instruction == 0100000:		
             self.trace.itrace('NOP')

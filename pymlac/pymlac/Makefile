@@ -4,10 +4,7 @@
 #
 
 clean:
-	rm -Rf *.pyc
-
-reallyclean:	clean
-	rm -Rf *.core *.log *.trace
+	rm -Rf *.pyc *~
 
 test0:
 	./pymlac -b ptr -c -t 0100 test0.ptp -r 0100

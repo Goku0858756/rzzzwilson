@@ -21,7 +21,6 @@ class Trace(object):
         self.trace('------  -------------   ------  --------------  '
                    '-----------------------\n')
         self.tracing = False
-        self.time = time.time()
 
     def close(self):
         self.tracefile.close()
@@ -50,14 +49,11 @@ class Trace(object):
                 self.tracefile.write('%s\t%s%5.5o\t' % (opcode, char, address))
 
     def itraceend(self, dispon):
-        now = time.time()
-        delta = now - self.time
-        self.time = now
         if dispon:
-            self.trace('L=%1.1o AC=%6.6o (%.6fs) DX=%5.5o DY=%6.6o\n' %
-                       (MainCPU.L, MainCPU.AC, delta, DisplayCPU.DX, DisplayCPU.DY))
+            self.trace('L=%1.1o AC=%6.6o DX=%5.5o DY=%6.6o\n' %
+                       (MainCPU.L, MainCPU.AC, DisplayCPU.DX, DisplayCPU.DY))
         else:
-            self.trace('L=%1.1o AC=%6.6o (%.6fs)\n' % (MainCPU.L, MainCPU.AC, delta))
+            self.trace('L=%1.1o AC=%6.6o\n' % (MainCPU.L, MainCPU.AC))
 
     def settrace(self, tracing):
         self.tracing = tracing

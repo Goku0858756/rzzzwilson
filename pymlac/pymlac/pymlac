@@ -102,6 +102,7 @@ def usage():
     print('pymlac [-b (ptr|tty)] [-c] [-t [<a>[,<b>]]] [<imlacfile>] [-r <address>]\n')
     print('where -b [ptr|tty]           sets the bootstrap ROM code, if no device disable ROM')
     print('      -c                     clear core, except bootstrap ROM')
+    print('      -d <value>             set data switches')
     print('      -h                     prints this help')
     print('      -r [<address>]         execute from the <address>, no address runs from current PC')
     print('      -s <setfile>           sets memory values from file')

@@ -49,7 +49,6 @@ class Imlac(object):
 
     def close(self, corefile=None):
         if corefile:
-            print 'Saving core to ' + corefile
             self.memory.savecore(corefile)
         sys.exit()
 

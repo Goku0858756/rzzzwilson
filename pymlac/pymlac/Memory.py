@@ -5,7 +5,7 @@ Class to emulate the Imlac Memory.
 """
 
 
-import pickle
+import struct
 
 import Globals
 from Globals import *
@@ -84,6 +84,7 @@ class Memory(object):
                     ]
 
     def __init__(self, boot_rom=ROM_PTR, corefile=None):
+        self.corefile = corefile
         self.memory = []
         if corefile:
             try:
@@ -95,45 +96,75 @@ class Memory(object):
         
         if boot_rom == ROM_PTR:
             self.set_PTR_ROM()
-        else:
+        elif boot_rom == ROM_TTY:
             self.set_TTY_ROM()
+        else:
+            pass
 
     def __init_core(self):
+        """Initialize memory to all zeros."""
+
         for i in range(MEMORY_SIZE):
             self.memory.append(0)
 
     def loadcore(self, file=None):
+        """Load core from a file.  Read 16 bit values as big-endian."""
+
+        if file is None:
+            file = self.corefile
         if file:
-            filed = open(file, 'r')
-            self.memory = pickle.load(filed)
-            filed.close()
+            memory = []
+            try:
+                with open(file, 'rb') as fd:
+                    while True:
+                        data = fd.read(1)
+                        if data == '':
+                            break
+                        high = struct.unpack('B', data)[0]
+                        low = struct.unpack('B', fd.read(1))[0]
+                        val = (high << 8) + low
+                        self.memory.append(val)
+            except struct.error:
+                raise RuntimeError('Core file %s is corrupt!' % file)
 
     def savecore(self, file=None):
+        """Save core in a file.  Write 16 bit values as big-endian."""
+
+        if file is None:
+            file = self.corefile
         if file:
-            try:
-                filed = open(file, 'w')
-                pickle.dump(self.memory, filed)
-                filed.close()
-            except IOError:
-                pass
+            with open(file, 'wb') as fd:
+                for val in self.memory:
+                    high = val >> 8
+                    low = val & 0xff
+                    data = struct.pack('B', high)
+                    fd.write(data)
+                    data = struct.pack('B', low)
+                    fd.write(data)
 
     def set_PTR_ROM(self):
+        """Set addresses 040 to 077 as PTR ROM."""
+
         i = self.ROM_START
-        count = 0
-        while count < self.ROM_SIZE:
-            self.memory[i] = self.PTR_ROM_IMAGE[count]
+        for ptr_value in self.PTR_ROM_IMAGE:
+            self.memory[i] = ptr_value
             i += 1
-            count += 1
 
     def set_TTY_ROM(self):
+        """Set addresses 040 to 077 as TTY ROM."""
+
         i = self.ROM_START
-        count = 0
-        while count < self.ROM_SIZE:
-            self.memory[i] = self.TTY_ROM_IMAGE[count]
+        for tty_value in self.TTY_ROM_IMAGE:
+            self.memory[i] = tty_value
             i += 1
-            count += 1
 
     def get(self, address, indirect):
+        """Get a value from a memory address.
+
+        The read can be indirect, and may be through an
+        auto-increment address.
+        """
+
         if indirect:
             if ISAUTOINC(address):
                 self.memory[address] = MASK_MEM(self.memory[address] + 1)
@@ -141,6 +172,12 @@ class Memory(object):
         return self.memory[address]
 
     def put(self, value, address, indirect):
+        """Put a value into a memory address.
+
+        The store can be indirect, and may be through an
+        auto-increment address.
+        """
+
         if indirect:
             if ISAUTOINC(address):
                 self.memory[address] = MASK_MEM(self.memory[address] + 1)
@@ -148,5 +185,19 @@ class Memory(object):
         try:
             self.memory[address] = MASK_16(value)
         except IndexError:
-            print('Bad address: %06o (max mem=%06o, ADDRMASK=%06o)' % (address, len(self.memory), ADDRMASK))
-            raise
+            raise RuntimeError('Bad address: %06o (max mem=%06o, ADDRMASK=%06o)'
+                               % (address, len(self.memory), ADDRMASK))
+
+
+if __name__ == '__main__':
+    memory = Memory(boot_rom=None, corefile='test.core')
+    all_zeros = True
+    for (addr, val) in enumerate(memory.memory):
+        if val != 0:
+            all_zeros = False
+            print('Memory at %06o is not zero (%06o)' % (addr, val))
+            break
+    print('Memory is %sall zeros' % ('' if all_zeros else 'not '))
+    memory.savecore(file='test2.core')
+    memory.set_PTR_ROM()
+    memory.savecore(file='test3.core')

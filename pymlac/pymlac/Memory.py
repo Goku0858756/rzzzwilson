@@ -14,6 +14,7 @@ from Globals import *
 class Memory(object):
     ROM_START = 040
     ROM_SIZE = 040
+    ROM_END = ROM_START + ROM_SIZE - 1
 
     # this PTR bootstrap from "Loading The PDS-1" (loading.pdf)
     PTR_ROM_IMAGE = [ 0060077, # start  lac    base  ;40 get load address
@@ -86,6 +87,8 @@ class Memory(object):
     def __init__(self, boot_rom=ROM_PTR, corefile=None):
         self.corefile = corefile
         self.memory = []
+        self.using_rom = None
+
         if corefile:
             try:
                 self.loadcore(corefile)
@@ -93,13 +96,15 @@ class Memory(object):
                 self.__init_core()
         else:
             self.__init_core()
+
+        self.set_ROM(boot_rom)
         
-        if boot_rom == ROM_PTR:
-            self.set_PTR_ROM()
-        elif boot_rom == ROM_TTY:
-            self.set_TTY_ROM()
-        else:
-            pass
+#        if boot_rom == ROM_PTR:
+#            self.set_PTR_ROM()
+#        elif boot_rom == ROM_TTY:
+#            self.set_TTY_ROM()
+#        else:
+#            pass
 
     def __init_core(self):
         """Initialize memory to all zeros."""
@@ -158,6 +163,29 @@ class Memory(object):
             self.memory[i] = tty_value
             i += 1
 
+    def set_ROM(self, type=None):
+        """Set ROM to either PTR or TTY, or disable ROM."""
+
+        if type == ROM_PTR:
+            self.using_rom = True
+            i = self.ROM_START
+            for ptr_value in self.PTR_ROM_IMAGE:
+                self.memory[i] = ptr_value
+                i += 1
+        elif type == ROM_TTY:
+            self.using_rom = True
+            i = self.ROM_START
+            for ptr_value in self.PTR_TTY_IMAGE:
+                self.memory[i] = ptr_value
+                i += 1
+        else:
+            self.using_rom = False
+            i = self.ROM_START
+            for _ in self.PTR_ROM_IMAGE:
+                self.memory[i] = 0
+                i += 1
+
+
     def get(self, address, indirect):
         """Get a value from a memory address.
 
@@ -182,6 +210,11 @@ class Memory(object):
             if ISAUTOINC(address):
                 self.memory[address] = MASK_MEM(self.memory[address] + 1)
             address = self.memory[address] & ADDRMASK
+
+        if self.using_rom and self.ROM_START <= address <= self.ROM_END:
+            print('Attempt to write to ROM')
+            return
+
         try:
             self.memory[address] = MASK_16(value)
         except IndexError:

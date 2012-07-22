@@ -4,10 +4,13 @@
 #
 
 clean:
-	rm -Rf *.pyc *~
+	rm -Rf *.pyc *~ *.out
+
+testall:	test0 test1
 
 test0:
 	./pymlac -b ptr -c -t 0100 test0.ptp -r 0100
+	diff pymlac.trace good_test0.trace | head -40
 
 test1:
 	./pymlac -b ptr -c -t 0100 test1.ptp -r 0100

@@ -44,38 +44,73 @@ class MainCPU(object):
         self.ttyout = ttyout
         self.running = True
         self.run_address = run
-#        self.dispatch = {000: self.page00,
-#                         001: self.i_LAW,
-#                         002: self.i_JMP,
-#                         003: self.illegal,
-#                         004: self.i_DAC,
-#                         005: self.i_XAM,
-#                         006: self.i_ISZ,
-#                         007: self.i_JMS,
-#                         010: self.illegal,
-#                         011: self.i_AND,
-#                         012: self.i_IOR,
-#                         013: self.i_XOR,
-#                         014: self.i_LAC,
-#                         015: self.i_ADD,
-#                         016: self.i_SUB,
-#                         017: self.i_SAM,
-#                         020: self.page20,
-#                         021: self.i_LWC,
-#                         022: self.i_JMP,
-#                         023: self.illegal,
-#                         024: self.i_DAC,
-#                         025: self.i_XAM,
-#                         026: self.i_ISZ,
-#                         027: self.i_JMS,
-#                         030: self.illegal,
-#                         031: self.i_AND,
-#                         032: self.i_IOR,
-#                         033: self.i_XOR,
-#                         034: self.i_LAC,
-#                         035: self.i_ADD,
-#                         036: self.i_SUB,
-#                         037: self.i_SAM, }
+        self.dispatch = {0000: self.page000,
+                         0004: self.i_LAW,
+                         0010: self.i_JMP,
+                         0014: self.illegal,
+                         0020: self.i_DAC,
+                         0024: self.i_XAM,
+                         0030: self.i_ISZ,
+                         0034: self.i_JMS,
+                         0040: self.illegal,
+                         0044: self.i_AND,
+                         0050: self.i_IOR,
+                         0054: self.i_XOR,
+                         0060: self.i_LAC,
+                         0064: self.i_ADD,
+                         0070: self.i_SUB,
+                         0074: self.i_SAM,
+                         0100: self.page100,
+                         0104: self.i_LWC,
+                         0110: self.i_JMP,
+                         0114: self.illegal,
+                         0120: self.i_DAC,
+                         0124: self.i_XAM,
+                         0130: self.i_ISZ,
+                         0134: self.i_JMS,
+                         0140: self.illegal,
+                         0144: self.i_AND,
+                         0150: self.i_IOR,
+                         0154: self.i_XOR,
+                         0160: self.i_LAC,
+                         0164: self.i_ADD,
+                         0170: self.i_SUB,
+                         0174: self.i_SAM, }
+
+        self.page001instructions = {0001003: self.i_DLA,
+                                    0001012: self.i_DOF,
+                                    0001021: self.i_KRB,
+                                    0001022: self.i_KCF,
+                                    0001023: self.i_KRC,
+                                    0001031: self.i_RRB,
+                                    0001032: self.i_RCF,
+                                    0001033: self.i_RRC,
+                                    0001041: self.i_TPR,
+                                    0001042: self.i_TCF,
+                                    0001043: self.i_TPC,
+                                    0001051: self.i_HRB,
+                                    0001052: self.i_HOF,
+                                    0001061: self.i_HON,
+                                    0001071: self.i_SCF,
+                                    0001072: self.i_IOS,
+                                    0001271: self.i_PUN,
+                                    0001274: self.i_PSF, }
+
+        self.page002instructions = {0002001: self.i_ASZ,
+                                    0002002: self.i_ASP,
+                                    0002004: self.i_LSZ,
+                                    0002010: self.i_DSF,
+                                    0002020: self.i_KSF,
+                                    0002040: self.i_RSF,
+                                    0002100: self.i_TSF,
+                                    0002200: self.i_SSF,
+                                    0002400: self.i_HSF, }
+
+        self.page003instructions = {000: self.i_RAL,
+                                    004: self.i_RAR,
+                                    010: self.i_SAL,
+                                    014: self.i_SAR,
+                                    020: self.i_DON, }
 
     def EFFADDR(self, address):
         return BlockBase | address
@@ -83,13 +118,11 @@ class MainCPU(object):
     def execute_one_instruction(self):
         """Execute one MAIN instruction, return # cycles used"""
 
-        global PC
+        global PC, BlockBase
 
         if not self.running:
             print('MainCPU halted')
             return 0
-
-        global BlockBase
 
         # get instruction word to execute, advance PC
         instruction = self.memory.get(PC, False)
@@ -98,70 +131,39 @@ class MainCPU(object):
 
         # break instruction into opcode and address
         indirect = instruction >> 15
-        opcode = instruction >> 11
+        opcode = (instruction >> 11) << 2	# note, includes indirect bit
         address = instruction & 03777
 
-#        return self.dispatch[opcode](indirect, address, instruction)
-
-        if   opcode == 000:	return self.page00(indirect, address, instruction)
-        elif opcode == 001:	return self.i_LAW(indirect, address, instruction)
-        elif opcode == 002:	return self.i_JMP(indirect, address, instruction)
-        elif opcode == 003:	return self.illegal(indirect, address, instruction)
-        elif opcode == 004:	return self.i_DAC(indirect, address, instruction)
-        elif opcode == 005:	return self.i_XAM(indirect, address, instruction)
-        elif opcode == 006:	return self.i_ISZ(indirect, address, instruction)
-        elif opcode == 007:	return self.i_JMS(indirect, address, instruction)
-        elif opcode == 010:	return self.illegal(indirect, address, instruction)
-        elif opcode == 011:	return self.i_AND(indirect, address, instruction)
-        elif opcode == 012:	return self.i_IOR(indirect, address, instruction)
-        elif opcode == 013:	return self.i_XOR(indirect, address, instruction)
-        elif opcode == 014:	return self.i_LAC(indirect, address, instruction)
-        elif opcode == 015:	return self.i_ADD(indirect, address, instruction)
-        elif opcode == 016:	return self.i_SUB(indirect, address, instruction)
-        elif opcode == 017:	return self.i_SAM(indirect, address, instruction)
-        elif opcode == 020:	return self.page20(indirect, address, instruction)
-        elif opcode == 021:	return self.i_LWC(indirect, address, instruction)
-        elif opcode == 022:	return self.i_JMP(indirect, address, instruction)
-        elif opcode == 023:	return self.illegal(indirect, address, instruction)
-        elif opcode == 024:	return self.i_DAC(indirect, address, instruction)
-        elif opcode == 025:	return self.i_XAM(indirect, address, instruction)
-        elif opcode == 026:	return self.i_ISZ(indirect, address, instruction)
-        elif opcode == 027:	return self.i_JMS(indirect, address, instruction)
-        elif opcode == 030:	return self.illegal(indirect, address, instruction)
-        elif opcode == 031:	return self.i_AND(indirect, address, instruction)
-        elif opcode == 032:	return self.i_IOR(indirect, address, instruction)
-        elif opcode == 033:	return self.i_XOR(indirect, address, instruction)
-        elif opcode == 034:	return self.i_LAC(indirect, address, instruction)
-        elif opcode == 035:	return self.i_ADD(indirect, address, instruction)
-        elif opcode == 036:	return self.i_SUB(indirect, address, instruction)
-        elif opcode == 037:	return self.i_SAM(indirect, address, instruction)
+        return self.dispatch[opcode](indirect, address, instruction)
 
     def illegal(self, indirect, address, instruction=None):
         if instruction:
-            print 'Illegal instruction (', '%6.6o' % instruction,') at address ', '%6.6o' % (PC-1)
+            msg = 'Illegal instruction (%6.6o) at address %6.6o' % (instruction, PC-1) 
         else:
-            print 'Illegal instruction at address', '%6.6o' % (PC-1)
-        sys.exit(0)
+            msg = 'Illegal instruction at address %6.6o' % (PC-1)
+        raise RuntimeError(msg)
+
+    def i_HLT(self, indirect, address, instruction):
+        self.trace.itrace('HLT', indirect, address)
+        return 1
 
     def i_ADD(self, indirect, address, instruction):
         global AC, L
 
-        cycles = 3 if indirect else 2
         effaddress = self.EFFADDR(address)
         AC += self.memory.get(address, indirect)
         if AC & OVERFLOWMASK:
             L = not L
             AC &= WORDMASK
         self.trace.itrace('ADD', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_AND(self, indirect, address, instruction):
         global AC
 
-        cycles = 3 if indirect else 2
         AC &= self.memory.get(address, indirect)
         self.trace.itrace('AND', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_ASP(self):
         global PC
@@ -180,12 +182,10 @@ class MainCPU(object):
         return 1
 
     def i_DAC(self, indirect, address, instruction):
-        cycles = 3 if indirect else 2
-
         address = self.EFFADDR(address)
         self.memory.put(AC, address, indirect)
         self.trace.itrace('DAC', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_DLA(self):
         DisplayCPU.DPC = AC
@@ -197,7 +197,7 @@ class MainCPU(object):
         self.trace.itrace('DOF')
         return 1
 
-    def i_DON(self):
+    def i_DON(self, ignore=None):
         DisplayCPU.DRSindex = 0
         self.displaycpu.start()
         self.trace.itrace('DON')
@@ -255,11 +255,9 @@ class MainCPU(object):
     def i_IOR(self, indirect, address, instruction):
         global AC
 
-        cycles = 3 if indirect else 2
-
         AC |= self.memory.get(address, indirect)
         self.trace.itrace('IOR', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_IOS(self):
         self.trace.itrace('IOS')
@@ -268,39 +266,33 @@ class MainCPU(object):
     def i_ISZ(self, indirect, address, instruction):
         global PC
 
-        cycles = 3 if indirect else 2
-
         value = (self.memory.get(address, indirect) + 1) & WORDMASK
         self.memory.put(value, address, False)
         if value == 0:
             PC = (PC + 1) & WORDMASK
         self.trace.itrace('ISZ', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_JMP(self, indirect, address, instruction):
         global PC
-
-        cycles = 3 if indirect else 2
 
         jmpaddr = self.EFFADDR(address)
         if indirect:
             jmpaddr = self.memory.get(jmpaddr, False)
         PC = jmpaddr & PCMASK
-
         self.trace.itrace('JMP', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_JMS(self, indirect, address, instruction):
         global PC
 
-        cycles = 3 if indirect else 2
         jmsaddr = self.EFFADDR(address)
         if indirect:
             jmsaddr = self.memory.get(jmsaddr, False)
         self.memory.put(PC, jmsaddr, False)
         PC = (jmsaddr + 1) & PCMASK
         self.trace.itrace('JMS', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_KCF(self):
         self.kbd.clear()
@@ -341,10 +333,9 @@ class MainCPU(object):
     def i_LAC(self, indirect, address, instruction):
         global AC
 
-        cycles = 3 if indirect else 2
         AC = self.memory.get(address, indirect)
         self.trace.itrace('LAC', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_LAW(self, indirect, address, instruction):
         global AC
@@ -481,14 +472,13 @@ class MainCPU(object):
     def i_SAM(self, indirect, address, instruction):
         global PC
 
-        cycles = 3 if indirect else 2
         samaddr = self.EFFADDR(address)
         if indirect:
             samaddr = self.memory.get(samaddr, False)
         if AC == self.memory.get(samaddr, False):
             PC = (PC + 1) & PCMASK
         self.trace.itrace('SAM', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_SAR(self, shift):
         global AC
@@ -523,13 +513,12 @@ class MainCPU(object):
     def i_SUB(self, indirect, address, instruction):
         global AC
 
-        cycles = 3 if indirect else 2
         effaddr = self.EFFADDR(address)
         if indirect:
             effaddr = self.memory.get(effaddr, False)
         AC = (AC - self.memory.get(effaddr, False)) & WORDMASK
         self.trace.itrace('SUB', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_TCF(self):
         self.ttyout.clear()
@@ -566,25 +555,23 @@ class MainCPU(object):
     def i_XAM(self, indirect, address, instruction):
         global AC
 
-        cycles = 3 if indirect else 2
         if indirect:
             address = self.memory.get(address, False)
         tmp = self.memory.get(address, False)
         self.memory.put(AC, address, False)
         AC = tmp
         self.trace.itrace('XAM', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
     def i_XOR(self, indirect, address, instruction):
         global AC
 
-        cycles = 3 if indirect else 2
         AC ^= self.memory.get(address, indirect)
         self.trace.itrace('XOR', indirect, address)
-        return cycles
+        return 3 if indirect else 2
 
-    # this is fiddly because we want to trace the single operation opcoded instructions
-    # *and* the encoded multiple non-opcoded instructions sensibly.
+    # this is fiddly because we want to trace the
+    # encoded multiple instructions sensibly.
     def micro(self, instruction):
         global PC, AC, L
 
@@ -637,151 +624,56 @@ class MainCPU(object):
             AC |= DisplayCPU.DS
             self.trace.itrace('LDA')
         else:		# bit-mapped operations
-            notfirst = 0
-            if instruction & 000001:
+            combined = []
+            if instruction & 0100001:
                 AC = 0
-                self.trace.trace('CLA'); notfirst = 1
-            if instruction & 000010:
+                combined.append('CLA')
+            if instruction & 0100010:
                 L = 0
-                if notfirst: self.trace.trace('+')
-                self.trace.trace('CLL'); notfirst = 1
-            if instruction & 000002:
+                combined.append('CLL')
+            if instruction & 0100002:
                 AC = (~AC) & WORDMASK
-                if notfirst: self.trace.trace('+')
-                self.trace.trace('CMA'); notfirst = 1
-            if instruction & 000020:
+                combined.append('CMA')
+            if instruction & 0100020:
                 L = (~L) & 1
-                if notfirst: self.trace.trace('+')
-                self.trace.trace('CMA'); notfirst = 1
-            if instruction & 000004:
+                combined.append('CML')
+            if instruction & 0100004:
                 newac = AC + 1
                 if newac & OVERFLOWMASK:
                     L = not L
                 AC = newac & WORDMASK
-                if notfirst: self.trace.trace('+')
-                self.trace.trace('IAC'); notfirst = 1
-            if instruction & 000040:
+                combined.append('IAC')
+            if instruction & 0100040:
                 AC |= self.dataswitches.read()
-                if notfirst: self.trace.trace('+')
-                self.trace.trace('ODA'); notfirst = 1
+                combined.append('ODA')
             if (instruction & 0100000) == 0:
                 if self.run_address:
                     PC = self.run_address
                     self.run_address = None
                 else:
                     self.running = 0
-                if notfirst: self.trace.trace('+')
-                self.trace.itrace('HLT'); notfirst = 1
+                combined.append('HLT')
+                halt_code = instruction & 077
+                if halt_code > 0:
+                    print('halt code = %d' % halt_code)
+            self.trace.itrace('+'.join(combined))
         return 1
 
-    def page00(self, indirect, address, instruction):
+    def page000(self, indirect, address, instruction):
         opcode = (instruction & 0177000) >> 9
 
         if opcode == 0000:
-            if ((instruction & 0077700) >> 6):
+            if instruction & 0077700:
                 self.illegal()
             return self.micro(instruction)
         elif opcode == 0001:
-            return self.page001(instruction)
+            return self.page001instructions.get(instruction, self.illegal)()
         elif opcode == 0002:
-            return self.page002(instruction)
+            return self.page002instructions.get(instruction, self.illegal)()
         elif opcode == 0003:
-            return self.page003(instruction)
-
-    def page001(self, instruction):
-        if instruction == 0001003:
-            return self.i_DLA()
-        elif instruction == 0001011:
-            self.illegal(instruction)	# CTB
-        elif instruction == 0001012:
-            return self.i_DOF()
-        elif instruction == 0001021:
-            return self.i_KRB()
-        elif instruction == 0001022:
-            return self.i_KCF()
-        elif instruction == 0001023:
-            return self.i_KRC()
-        elif instruction == 0001031:
-            return self.i_RRB()
-        elif instruction == 0001032:
-            return self.i_RCF()
-        elif instruction == 0001033:
-            return self.i_RRC()
-        elif instruction == 0001041:
-            return self.i_TPR()
-        elif instruction == 0001042:
-            return self.i_TCF()
-        elif instruction == 0001043:
-            return self.i_TPC()
-        elif instruction == 0001051:
-            return self.i_HRB()
-        elif instruction == 0001052:
-            return self.i_HOF()
-        elif instruction == 0001061:
-            return self.i_HON()
-        elif instruction == 0001071:
-            return self.i_SCF()
-        elif instruction == 0001072:
-            return self.i_IOS()
-        elif instruction == 0001101:
-            self.illegal(instruction)	# IOT 101
-        elif instruction == 0001111:
-            self.illegal(instruction)	# IOT 111
-        elif instruction == 0001131:
-            self.illegal(instruction)	# IOT 131
-        elif instruction == 0001132:
-            self.illegal(instruction)	# IOT 132
-        elif instruction == 0001134:
-            self.illegal(instruction)	# IOT 134
-        elif instruction == 0001141:
-            self.illegal(instruction)	# IOT 141
-        elif instruction == 0001161:
-            self.illegal(instruction)	# IOT 161
-        elif instruction == 0001162:
-            self.illegal(instruction)	# IOT 162
-        elif instruction == 0001271:
-            return self.i_PUN()
-        elif instruction == 0001274:
-            return self.i_PSF()
-        else:
-            self.illegal(instruction)
-
-    def page002(self, instruction):
-        if instruction == 0002001:
-            return self.i_ASZ()
-        if instruction == 0002002:
-            return self.i_ASP()
-        if instruction == 0002004:
-            return self.i_LSZ()
-        if instruction == 0002010:
-            return self.i_DSF()
-        if instruction == 0002020:
-            return self.i_KSF()
-        if instruction == 0002040:
-            return self.i_RSF()
-        if instruction == 0002100:
-            return self.i_TSF()
-        if instruction == 0002200:
-            return self.i_SSF()
-        if instruction == 0002400:
-            return self.i_HSF()
-        self.illegal(instruction)
-
-    def page003(self, instruction):
-        shift = instruction & 3
-        opcode = (instruction & 0777) >> 2
-        if opcode == 000:
-            return self.i_RAL(shift)
-        elif opcode == 004:
-            return self.i_RAR(shift)
-        elif opcode == 010:
-            return self.i_SAL(shift)
-        elif opcode == 014:
-            return self.i_SAR(shift)
-        elif opcode == 020:
-            return self.i_DON()
-        else:
-            self.illegal(instruction)
+            shift = instruction & 3
+            opcode = (instruction & 0777) >> 2
+            return self.page003instructions.get(opcode, self.illegal)(shift)
 
     def page102(self, instruction):
         global PC
@@ -817,7 +709,7 @@ class MainCPU(object):
             self.illegal()
             
 
-    def page20(self, indirect, address, instruction):
+    def page100(self, indirect, address, instruction):
         opcode = (instruction & 0177000) >> 9
 
         if opcode == 0100:

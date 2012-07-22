@@ -29,7 +29,7 @@ def handle_options():
     global run_address
 
     try:
-        opts, pargs = getopt.gnu_getopt(sys.argv[1:], 'b:cr:t:?')
+        opts, pargs = getopt.gnu_getopt(sys.argv[1:], 'b:chr:t:?')
     except getopt.GetoptError, e:
         print e, '\n'
         usage()
@@ -47,6 +47,8 @@ def handle_options():
                 errors = 1
         elif opt == "-c":
             corefile = None
+        elif opt == '-h':
+            usage()
         elif opt == '-r':
             if len(arg) <= 0:
                 print "'-r' must be followed by a run address in octal"
@@ -85,11 +87,6 @@ def handle_options():
     if len(pargs) > 0:
         loadfile = pargs[0]
 
-    print('handle_options: loadfile=%s' % loadfile)
-    print('handle_options: boot_rom=%s' % str(boot_rom))
-    print('handle_options: tracestart=%s' % str(tracestart))
-    print('handle_options: traceend=%s' % str(traceend))
-
 
 def syserror(msg):
     """Report a system error."""
@@ -101,14 +98,19 @@ def syserror(msg):
 def usage():
     """Help for befuddled user."""
 
-    print 'usage: pymlac [-b (ptr|tty)] [-c] [-t [<a>[,<b>]]] [<imlacfile>] [-r <address>]'
-    print 'where -b (ptr|tty)         sets the boot code and input device (ptr or tty)'
-    print "      -c                   don't read the core save file"
-    print '      -r <address>         sets the subsequent run address'
-    print '      -t <addr1>[,<addr2>] controls trace:'
-    print '                             -t 100     trace from address 0100'
-    print '                             -t 100,200 traces between addresses 100 and 200'
-    print 'and   <imlacfile>          is the file to mount on the input device (ptr or tty)'
+    print('Usage:\n')
+    print('pymlac [-b (ptr|tty)] [-c] [-t [<a>[,<b>]]] [<imlacfile>] [-r <address>]\n')
+    print('where -b [ptr|tty]           sets the bootstrap ROM code, if no device disable ROM')
+    print('      -c                     clear core, except bootstrap ROM')
+    print('      -h                     prints this help')
+    print('      -r [<address>]         execute from the <address>, no address runs from current PC')
+    print('      -s <setfile>           sets memory values from file')
+    print('      -t [<addr1>[,<addr2>]] controls trace:')
+    print('                               -t 100     trace from address 0100')
+    print('                               -t 100,200 traces between addresses 100 and 200')
+    print('                             if no addresses given, trace from next instruction')
+    print('      -v <viewfile>          prints memory locations from file')
+    print('and   <imlacfile>            is a file to mount on the input device (ptr or tty)')
     sys.exit()
 
 
@@ -143,26 +145,17 @@ def main():
                         traceend, boot_rom, corefile)
 
     # mount the file, if it was specified
-    print('main: loadfile=%s' % str(loadfile))
     if loadfile:
-        print('loadfile=%s' % loadfile)
-        print('loadfile=%s' % loadfile)
         try:
             if boot_rom == ROM_PTR:
-                print('calling imlac.ptr_mount(%s)' % loadfile)
                 imlac.ptr_mount(loadfile)
-                print 'loaded file %s' % loadfile
             else:
                 imlac.ttyin_mount(loadfile)
         except IOError, e:
             print e
             sys.exit()
-    else:
-        print 'no loadfile'
 
     while True:
-#        imlac.pump()
-
         if imlac.execute_once() == 0:
             break
 

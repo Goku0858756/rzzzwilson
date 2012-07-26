@@ -129,6 +129,25 @@ class MainCPU(object):
                               0102200: self.i_SSN,
                               0002400: self.i_HSF,
                               0102400: self.i_HSN}
+        self.micro_opcodes = {0100000: 'NOP',
+                              0100001: 'CLA',
+                              0100002: 'CMA',
+                              0100003: 'STA',
+                              0100004: 'IAC',
+                              0100005: 'COA',
+                              0100006: 'CIA',
+                              0100010: 'CLL',
+                              0100011: 'CAL',
+                              0100020: 'CML',
+                              0100030: 'STL',
+                              0100040: 'ODA',
+                              0100041: 'LDA'}
+        self.micro_singles = {0100001: 'CLA',
+                              0100002: 'CMA',
+                              0100004: 'IAC',
+                              0100010: 'CLL',
+                              0100020: 'CML',
+                              0100040: 'ODA'}
 
 
     def EFFADDR(self, address):
@@ -290,12 +309,11 @@ class MainCPU(object):
         return 3 if indirect else 2
 
     def microcode(self, instruction):
-        global AC, L
+        global AC, L, PC
 
         # T1
         if (instruction & 001):
             AC = 0
-           
         if (instruction & 010):
             L = 0
 
@@ -303,42 +321,40 @@ class MainCPU(object):
         if (instruction & 002):
             AC = (~AC) & WORDMASK
         if (instruction & 020):
-            L = (~L) & 1
+            L = (~L) & 01
 
         # T3
         if (instruction & 004):
             newac = AC + 1
-            if newac & ~OVERFLOWMASK:
-                L = (~L) & 1
+            if newac & OVERFLOWMASK:
+                L = (~L) & 01
             AC = newac & WORDMASK
         if (instruction & 040):
             AC |= self.dataswitches.read()
             L = (~L) & 1
 
         # do some sort of trace
-        combined = []
-        t = ''
-        if instruction & 001:
-            t = 'CLA'
-        if instruction & 002:
-            t = 'CMA'
-        if (instruction & 003) == 03:
-            t = 'STA'
-        combined.append(t)
-        t = ''
-        if instruction & 010:
-            t = 'CLL'
-        if instruction & 020:
-            t = 'CML'
-        if (instruction & 030) == 030:
-            t = 'STL'
-        combined.append(t)
-        if instruction & 004:
-            combined.append('IAC')
-        if instruction & 040:
-            combined.append('ODA')
+        combine = []
+        opcode = self.micro_opcodes.get(instruction, None)
+        if opcode:
+            combine.append(opcode)
 
-        self.trace.itrace('+'.join(combined), False)
+        if not combine:
+            # nothing so far, we have HLT or unknown microcode
+            if not instruction & 0100000:
+                # bit 0 is clear, it's HLT
+                if self.run_address:
+                    PC = self.run_address
+                    self.run_address = None
+                else:
+                    self.running = False
+                combine.append('HLT')
+            else:
+                for (k, op) in self.micro_singles.items():
+                    if instruction & k:
+                        combine.append(op)
+
+        self.trace.itrace('+'.join(combine), False)
         return 1
 
     def i_DLA(self, indirect, address, instruction):

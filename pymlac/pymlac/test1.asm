@@ -1,18 +1,18 @@
 	org	00100
 	law	1	; load AC with 1
 	sam	one	; check it's actually 1
-	hlt	01	;
+	hlt		;
 	law	2	; load AC with 2
 	sam	two	; check it's actually 2
-	hlt	02	;
+	hlt		;
 	lwc	0	; load AC with complement of 0
 	sam	zero	; check -0 is 0
-	hlt	03	;
+	hlt		;
 	lwc	1	; load AC with complement of 1
 	sam	minus1	; check -1 is 0177777
-	hlt	04	;
+	hlt		;
 	jmp	jmptest	;
-	hlt	05	;
+	hlt		;
 jmptest	dac	dactest	; store AC (0177777)
 	cla		; clear AC
 	lac	dactest	; did we store -1?
@@ -24,55 +24,55 @@ jmptest	dac	dactest	; store AC (0177777)
 	nop		;
 	lac	isztest	;
 	isz	isztest	; should skip this time
-	hlt	06	;
+	hlt		;
 	jms	jmstest	;
 	lac	minus1	;
 	and	one	;
 	sam	one	;
-	hlt	07	;
+	hlt		;
         law	0123	;
 	ior	iortest	;
 	sam	expior	;
-	hlt	010	;
+	hlt		;
 	law	0123	;
 	xor	xortest	;
 	sam	expxor	;
-	hlt	011	;
+	hlt		;
 	cla		;
 	add	one	;
 	sam	one	;
-	hlt	012	;
+	hlt		;
 	lac	minus1	;
 	add	one	;
 	sam	zero	;
-	hlt	013	;
+	hlt		;
 	cll		;
 	cla		;
 	iac		;
 	sam	one	;
-	hlt	014	;
+	hlt		;
 	cma		;
 	sam	minus2	;
-	hlt	015	;
+	hlt		;
 	sta		;
 	sam	minus1	;
-	hlt	016	;
+	hlt		;
 	iac		;
 	sam	zero	;
-	hlt	017	;
+	hlt		;
 	coa		;
 	sam	one	;
-	hlt	020	;
+	hlt		;
 	cla		;
 	cia		;
 	sam	zero	;
-	hlt	021	;
+	hlt		;
 	cll		;
 	cml		;
 	law	1	;
 	cal		;
 	sam	zero	;
-	hlt	022	;
+	hlt		;
 	stl		;
 	hlt 		;
 			;

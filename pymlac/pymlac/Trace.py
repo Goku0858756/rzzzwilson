@@ -40,7 +40,7 @@ class Trace(object):
             else:
                 self.tracefile.write('%s\t%5.5o\t' % (opcode, address))
 
-    def itrace(self, opcode, indirect=0, address=None):
+    def itrace(self, opcode, indirect=False, address=None):
         if self.tracing:
             char = '*' if indirect else ''
             if address is None:

@@ -231,7 +231,7 @@ class MainCPU(object):
         global PC
 
         value = (self.memory.get(address, indirect) + 1) & WORDMASK
-        self.memory.put(value, address, False)
+        self.memory.put(value, address, indirect)
         if value == 0:
             PC = (PC + 1) & WORDMASK
         self.trace.itrace('ISZ', indirect, address)

@@ -288,12 +288,13 @@ class MainCPU(object):
         return 3 if indirect else 2
 
     def i_SUB(self, indirect, address, instruction):
-        global AC
+        global AC, L
 
         effaddr = self.EFFADDR(address)
-        if indirect:
-            effaddr = self.memory.get(effaddr, False)
-        AC = (AC - self.memory.get(effaddr, False)) & WORDMASK
+        AC -= self.memory.get(address, indirect)
+        if AC & OVERFLOWMASK:
+            L = not L
+            AC &= WORDMASK
         self.trace.itrace('SUB', indirect, address)
         return 3 if indirect else 2
 

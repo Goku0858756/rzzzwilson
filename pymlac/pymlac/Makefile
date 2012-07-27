@@ -12,7 +12,7 @@ test:	$(TESTS)
 
 %:	%.ptp
 	./pymlac -b ptr -t 0100 $< -r 0100
-	diff pymlac.trace good_$*.trace | head -40
+	diff pymlac.trace good_$*.trace | head -10
 
 %.ptp:	%.asm
 	./iasm -l $*.lst $<

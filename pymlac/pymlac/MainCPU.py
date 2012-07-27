@@ -509,112 +509,147 @@ class MainCPU(object):
         global AC, L
 
         newl = AC >> 15
-        newac = AC << 1 + L
-
+        newac = (AC << 1) | L
         L = newl
         AC = newac & WORDMASK
-        self.trace.itrace('RAL', 0, 1)
+
+        self.trace.itrace('RAL', False, 1)
         return 1
 
     def i_RAL2(self, indirect, address, instruction):
         global AC, L
 
-        highbits = AC >> 15
-        newl = (AC >> 14) & 1
-        newac = (((AC << 1) + L) << 1) + highbits
-
+        newl = AC >> 15
+        newac = (AC << 1) | L
         L = newl
         AC = newac & WORDMASK
-        self.trace.itrace('RAL', 0, 2)
+
+        newl = AC >> 15
+        newac = (AC << 1) | L
+        L = newl
+        AC = newac & WORDMASK
+
+        self.trace.itrace('RAL', False, 2)
         return 1
 
     def i_RAL3(self, indirect, address, instruction):
         global AC, L
 
-        highbits = AC >> 14
-        newl = (AC >> 13) & 1
-        newac = (((AC << 1) + L) << 2) + highbits
-
+        newl = AC >> 15
+        newac = (AC << 1) | L
         L = newl
         AC = newac & WORDMASK
-        self.trace.itrace('RAL', 0, 3)
+
+        newl = AC >> 15
+        newac = (AC << 1) | L
+        L = newl
+        AC = newac & WORDMASK
+
+        newl = AC >> 15
+        newac = (AC << 1) | L
+        L = newl
+        AC = newac & WORDMASK
+
+        self.trace.itrace('RAL', False, 3)
         return 1
 
     def i_RAR1(self, indirect, address, instruction):
         global AC, L
 
         newl = AC & 1
-        newac = AC >> 1 + L << 15
+        newac = (AC >> 1) | (L << 15)
+        L = newl
+        AC = newac & WORDMASK
 
-        shift.regs.L = newl
-        shift.regs.AC = newac & WORDMASK
-        self.trace.itrace('RAR', 0, 1)
+        self.trace.itrace('RAR', False, 1)
         return 1
 
     def i_RAR2(self, indirect, address, instruction):
         global AC, L
 
-        lowbits = AC & 1
-        newl = (AC >> 1) & 1
-        newac = (((AC >> 1) + L << 15) >> 1) + lowbits << 15
+        newl = AC & 1
+        newac = (AC >> 1) | (L << 15)
+        L = newl
+        AC = newac & WORDMASK
 
-        shift.regs.L = newl
-        shift.regs.AC = newac & WORDMASK
-        self.trace.itrace('RAR', 0, 2)
+        newl = AC & 1
+        newac = (AC >> 1) | (L << 15)
+        L = newl
+        AC = newac & WORDMASK
+
+        self.trace.itrace('RAR', False, 2)
         return 1
 
     def i_RAR3(self, indirect, address, instruction):
         global AC, L
 
-        lowbits = AC & 3
-        newl = (AC >> 2) & 1
-        newac = (((AC >> 1) + L << 15) >> 2) + lowbits << 14
+        newl = AC & 1
+        newac = (AC >> 1) | (L << 15)
+        L = newl
+        AC = newac & WORDMASK
 
-        shift.regs.L = newl
-        shift.regs.AC = newac & WORDMASK
-        self.trace.itrace('RAR', 0, 3)
+        newl = AC & 1
+        newac = (AC >> 1) | (L << 15)
+        L = newl
+        AC = newac & WORDMASK
+
+        newl = AC & 1
+        newac = (AC >> 1) | (L << 15)
+        L = newl
+        AC = newac & WORDMASK
+
+        self.trace.itrace('RAR', False, 3)
         return 1
 
     def i_SAL1(self, indirect, address, instruction):
         global AC
 
-        AC = (AC << 1) & WORDMASK
-        self.trace.itrace('SAL', 0, 1)
+        high_bit = AC & HIGHBITMASK
+        value = AC & 037777
+        AC = (value << 1) | high_bit
+        self.trace.itrace('SAL', False, 1)
         return 1
 
     def i_SAL2(self, indirect, address, instruction):
         global AC
 
-        AC = (AC << 2) & WORDMASK
-        self.trace.itrace('SAL', 0, 2)
+        high_bit = AC & HIGHBITMASK
+        value = AC & 017777
+        AC = (value << 2) | high_bit
+        self.trace.itrace('SAL', False, 2)
         return 1
 
     def i_SAL3(self, indirect, address, instruction):
         global AC
 
-        AC = (AC << 3) & WORDMASK
-        self.trace.itrace('SAL', 0, 3)
+        high_bit = AC & HIGHBITMASK
+        value = AC & 007777
+        AC = (value << 3) | high_bit
+        self.trace.itrace('SAL', False, 3)
         return 1
 
     def i_SAR1(self, indirect, address, instruction):
         global AC
 
-        AC >>= 1
-        self.trace.itrace('SAR', 0, 1)
+        high_bit = AC & HIGHBITMASK
+        AC = (AC >> 1) | high_bit
+        self.trace.itrace('SAR', False, 1)
         return 1
 
     def i_SAR2(self, indirect, address, instruction):
         global AC
 
-        AC >>= 2
-        self.trace.itrace('SAR', 0, 2)
+        high_bit = AC & HIGHBITMASK
+        AC = (AC >> 2) | high_bit
+        self.trace.itrace('SAR', False, 2)
         return 1
 
     def i_SAR3(self, indirect, address, instruction):
         global AC
 
-        AC >>= 3
-        self.trace.itrace('SAR', 0, 3)
+        high_bit = AC & HIGHBITMASK
+        AC = (AC >> 3) | high_bit
+        self.trace.itrace('SAR', False, 3)
         return 1
 
     def i_DON(self, indirect, address, instruction):

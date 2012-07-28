@@ -170,8 +170,9 @@ TRACE_FILENAME = 'pymlac.trace'
 CYCLES_PER_SECOND = int(1000000 / 1.8)
 
 # Definitions of boot ROM code type
-ROM_PTR = 0
-ROM_TTY = 1
+ROM_PTR = 1
+ROM_TTY = 2
+ROM_NONE = 3
 
 # The pygame user-defined event number used for state changes
 IMLAC_EVENT = USEREVENT + 1

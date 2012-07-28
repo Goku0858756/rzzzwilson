@@ -46,11 +46,13 @@ class Imlac(object):
                                     self.displaycpu,
                                     self.kbd, self.ptr, self.ptp, self.ttyin,
                                     self.ttyout, run_address)
-
     def close(self, corefile=None):
         if corefile:
             self.memory.savecore(corefile)
         sys.exit()
+
+    def set_ROM(self, type):
+        self.memory.set_ROM(type)
 
     def ptr_mount(self, filename):
         self.ptr.mount(filename)

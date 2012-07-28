@@ -6,13 +6,14 @@ Class to emulate the Imlac Registers (main cpu and display cpu).
 
 
 class Regs(object):
-    PC = 040				# main CPU program counter
+    DS = 0100000		# data switches
+
+    PC = 040			# main CPU program counter
     L = 0				# main CPU link register
     AC = 0				# main CPU accumulator
-    Sync40Hz = 1			# main CPU 40Hz flag register
+    Sync40Hz = 1		# main CPU 40Hz flag register
 
     DPC = 0				# display CPU program counter
-    DS = 0100000			# display CPU ???
     DRS = [0, 0, 0, 0, 0, 0, 0, 0]	# display CPU ???
     DRSindex = 0			# display CPU ???
     DIB = 0				# display CPU ???

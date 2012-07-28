@@ -7,160 +7,250 @@ Console-only version
 """
 
 import sys
-import getopt
+import os
 
 from Globals import *
 import Imlac
 import Trace
 
 
+# map ROM name to type
+RomTypeMap = {'ptr': ROM_PTR,
+              'tty': ROM_TTY,
+              'none': ROM_NONE}
+
+def abort(msg):
+    """Handle a terminal problem."""
+
+    print(msg)
+    sys.exit(1)
+
+def check_int(value, msg):
+    """Check that a value is a valid 16 bit positive value.
+   
+    We allow decmal and octal number representations.
+    """
+
+    try:
+        if str(value)[0] == '0':
+            data = int(value, 8)
+        else:
+            data = int(value)
+    except:
+        abort(msg)
+    if data < 0 or data > 0177777:
+        abort(msg)
+
+    return data
+
+def get_next(options, index, msg):
+    """If possible, get next arg in list."""
+
+    if index < len(options):
+        next_arg = options[index]
+    else:
+        abort(msg)
+
+    return next_arg
+
 def handle_options():
     """Routine to analyse command line options.
 
-    Sets globals to input values.
+    Returns a list of operation objects which are tuples:
+        (OPERATION, ARGS)
     """
 
-    global boot_rom
-    global loadfile
-    global corefile
-    global tracing
-    global tracestart
-    global traceend
-    global run_address
+    options = sys.argv[1:]
 
-    try:
-        opts, pargs = getopt.gnu_getopt(sys.argv[1:], 'b:chr:t:?')
-    except getopt.GetoptError, e:
-        print e, '\n'
-        usage()
+    index = 0
+    result = []
+    boot_rom = 'ptr'
 
-    errors= 0
+    while index < len(options):
+        arg = options[index]
+        index += 1
 
-    for opt, arg in opts:
-        if opt == "-b":
-            if arg == 'ptr':
-                boot_rom = ROM_PTR
-            elif arg == 'tty':
-                boot_rom = ROM_TTY
-            else:
-                print "'-b' option must be followed by 'ptr' or 'tty'"
-                errors = 1
-        elif opt == "-c":
-            corefile = None
-        elif opt == '-h':
-            usage()
-        elif opt == '-r':
-            if len(arg) <= 0:
-                print "'-r' must be followed by a run address in octal"
-                errors = 1
-            else:
-                if run_address == None:
-                    try:
-                        run_address = int(arg, 8)
-                    except:
-                        print "'-r' must be followed by a run address in octal"
-                        errors = 1
+        if arg[0] == '-':
+            if arg == '-b':
+                next_arg = get_next(options, index,
+                                    "-b option must be 'ptr' or 'tty' or 'none'")
+                index += 1
+                next_arg = next_arg.lower()
+                next_arg = RomTypeMap.get(next_arg, False)
+
+                if next_arg:
+                    op = ('boot', next_arg)
+                    boot_rom = next_arg
                 else:
-                    print "there can be only one '-r' option"
-                    errors = 1
-        elif opt == '-t':
-            splitarg = arg.split(',')
-            if len(splitarg) == 1:
-                tracestart = int(splitarg[0], 8)
-            elif len(splitarg) == 2:
-                tracestart = int(splitarg[0], 8)
-                traceend = int(splitarg[1], 8)
+                    abort("-b option must be 'ptr', 'tty' or 'none'")
+            elif arg == '-c':
+                op = ('clear', boot_rom)
+            elif arg == '-d':
+                next_arg = get_next(options, index,
+                                    "-d option must be data switch value, positive & max 16 bits")
+                index += 1
+                data = check_int(next_arg,
+                                 "-d option must be data switch value, positive & max 16 bits")
+                op = ('data', data)
+            elif arg == '-h':
+                usage()
+            elif arg == '-ptp':
+                next_arg = get_next(options, index,
+                                    "-ptp option must be papertape punch file")
+                index += 1
+                if not os.path.isfile(next_arg):
+                    abort("File %s isn't a papertape file" % next_arg)
+                op = ('load_ptp', next_arg)
+            elif arg == '-ptr':
+                next_arg = get_next(options, index,
+                                    "-ptr option must be papertape reader file")
+                index += 1
+                if not os.path.isfile(next_arg):
+                    abort("File %s isn't a papertape file" % next_arg)
+                op = ('load_ptr', next_arg)
+            elif arg == '-r':
+                next_arg = get_next(options, index,
+                                    "-r option must be 'PC' or run address, positive & max 16 bits")
+                index += 1
+                next_arg = next_arg.lower()
+                if next_arg == 'pc':
+                    op = ('run', None)
+                else:
+                    address = check_int(next_arg,
+                                        "-r option must be 'PC' or run address, positive & max 16 bits")
+                    op = ('run', address)
+            elif arg == '-s':
+                next_arg = get_next(options, index,
+                                    "-s option must be set file")
+                index += 1
+                if not os.path.isfile(next_arg):
+                    abort("File %s isn't a 'set' file" % next_arg)
+                op = ('set', next_arg)
+            elif arg == '-t':
+                next_arg = get_next(options, index,
+                                    "-t option must be trace range")
+                index += 1
+                addr = next_arg.split(',')
+                if len(addr) == 1:
+                    trace1 = addr[0]
+                    if trace1.lower() == 'off':
+                        trace1 = None
+                    else:
+                        trace1 = check_int(trace1,
+                                           "-t option must be trace range")
+                    trace2 = None
+                elif len(addr) == 2:
+                    trace1 = addr[0]
+                    check_int(trace1, "-t option must be trace range")
+                    trace2 = addr[1]
+                    check_int(trace2, "-t option must be trace range")
+                else:
+                    abort("-t option must be trace range")
+                op = ('trace', (trace1, trace2))
+            elif arg == '-ttyin':
+                next_arg = get_next(options, index,
+                                    "-ttyin option must be teletype input file")
+                index += 1
+                if not os.path.isfile(next_arg):
+                    abort("File %s isn't a teletype file" % next_arg)
+                op = ('load_ttyin', next_arg)
+            elif arg == '-ttyout':
+                next_arg = get_next(options, index,
+                                    "-ttyout option must be teletype output file")
+                index += 1
+                if not os.path.isfile(next_arg):
+                    abort("File %s isn't a teletype file" % next_arg)
+                op = ('load_ttyout', next_arg)
+            elif arg == '-v':
+                next_arg = get_next(options, index,
+                                    "-v option must be view file")
+                index += 1
+                if not os.path.isfile(next_arg):
+                    abort("File %s isn't a 'view' file" % next_arg)
+                op = ('view', next_arg)
+            elif arg == '-w':
+                next_arg = get_next(options, index,
+                                    "-W option must be ON|OFF")
+                index += 1
+                next_arg = next_arg.lower()
+                if next_arg in ['on', 'off']:
+                    op = ('write', next_arg)
+                else:
+                    abort("-w option must be 'ON' or 'OFF'")
             else:
-                print "'-t' must be followed by 1 or 2 addresses"
-                errors = 1
-        elif opt == "-?":
+                usage()
+        else:
             usage()
 
-    if len(pargs) > 1:
-        print 'only one file may be specified'
-        errors = 1
-
-    if errors:
-        print ''
-        usage()
-
-    if len(pargs) > 0:
-        loadfile = pargs[0]
-
-
-def syserror(msg):
-    """Report a system error."""
-
-    print msg
-    sys.exit()
-
+        result.append(op)
+    return result
 
 def usage():
     """Help for befuddled user."""
 
     print('Usage:\n')
-    print('pymlac [-b (ptr|tty)] [-c] [-t [<a>[,<b>]]] [<imlacfile>] [-r <address>]\n')
-    print('where -b [ptr|tty]           sets the bootstrap ROM code, if no device disable ROM')
-    print('      -c                     clear core, except bootstrap ROM')
-    print('      -d <value>             set data switches')
-    print('      -h                     prints this help')
-    print('      -r [<address>]         execute from the <address>, no address runs from current PC')
-    print('      -s <setfile>           sets memory values from file')
-    print('      -t [<addr1>[,<addr2>]] controls trace:')
-    print('                               -t 100     trace from address 0100')
-    print('                               -t 100,200 traces between addresses 100 and 200')
-    print('                             if no addresses given, trace from next instruction')
-    print('      -v <viewfile>          prints memory locations from file')
-    print('and   <imlacfile>            is a file to mount on the input device (ptr or tty)')
+    print('pymlac [-b (ptr|tty|none)] [-c] [-t [<a>[,<b>]]] [-r <address>] [<imlacfile>]\n')
+    print('where -b (ptr|tty|none)           sets the bootstrap ROM code, if no device disable ROM')
+    print('      -c                          clear core, except bootstrap ROM')
+    print('      -d <value>                  set data switches')
+    print('      -ptp <file>                 mount <file> on the papertape punch')
+    print('      -ptr <file>                 mount <file> on the papertape reader')
+    print('      -h                          prints this help')
+    print('      -r (<address>|PC)           execute from the <address>, no address runs from current PC')
+    print('      -s <setfile>                sets memory values from file')
+    print('      -t (<addr1>[,<addr2>]|off)  controls trace:')
+    print('                                    -t 100     trace from address 0100')
+    print('                                    -t 100,200 traces between addresses 100 and 200')
+    print('                                    -t off     trace OFF')
+    print('      -ttyin <file>               mount <file> on the teletype reader')
+    print('      -ttyout <file>              mount <file> on the teletype writer')
+    print('      -v <viewfile>               prints memory locations from file')
+    print('      -w on|off                   turn ROM writability ON or OFF')
     sys.exit()
-
-
-# set defaults
-boot_rom = ROM_PTR
-run_address = None
-loadfile = None
-corefile = CORE_FILENAME
-tracing = False
-tracestart = None
-traceend = None
 
 
 def main():
     """Start of the Imlac emulator."""
 
-    global boot_rom
-    global loadfile
-    global corefile
-    global tracing
-    global tracestart
-    global traceend
-    global run_address
+    # get operations list
+    ops = handle_options()
 
-    handle_options()
-
-    ######
     # Initialize the emulator.
-    ######
+#run address, trace all NOT SET!
+    boot_rom = 'ptr'    # default ROM loader
+    imlac = Imlac.Imlac(0, TRACE_FILENAME, None,
+                        None, boot_rom, CORE_FILENAME)
 
-    imlac = Imlac.Imlac(run_address, TRACE_FILENAME, tracestart,
-                        traceend, boot_rom, corefile)
+    # now perform operations
+    for (operation, args) in ops:
+        if operation == 'boot':
+            imlac.set_ROM(args)
+        elif operation == 'clear':
+            imlac.memory.clear_core()
+        elif operation == 'load_ptp':
+            imlac.ptp_mount(args)
+        elif operation == 'load_ptr':
+            imlac.ptr_mount(args)
+        elif operation == 'data':
+            imlac.DS = args
+        elif operation == 'run':
+            print('run: %s' % str(args))
+        elif operation == 'set':
+            print('set: %s' % str(args))
+        elif operation == 'trace':
+            print('trace: %s' % str(args))
+        elif operation == 'ttyin':
+            print('ttyin: %s' % str(args))
+        elif operation == 'ttyout':
+            print('ttyout: %s' % str(args))
+        elif operation == 'view':
+            print('view: %s' % str(args))
+        elif operation == 'write':
+            print('write: %s' % str(args))
+        else:
+            abort('Invalid internal operation: %s' % operation)
 
-    # mount the file, if it was specified
-    if loadfile:
-        try:
-            if boot_rom == ROM_PTR:
-                imlac.ptr_mount(loadfile)
-            else:
-                imlac.ttyin_mount(loadfile)
-        except IOError, e:
-            print e
-            sys.exit()
-
-    while True:
-        if imlac.execute_once() == 0:
-            break
-
-    imlac.close(corefile)
+    imlac.close(CORE_FILENAME)
 
 #import profile
 #profile.run('main()', 'profile.out')

@@ -87,15 +87,16 @@ class Memory(object):
     def __init__(self, boot_rom=ROM_PTR, corefile=None):
         self.corefile = corefile
         self.memory = []
-        self.using_rom = None
+        self.using_rom = True
+        self.boot_rom = boot_rom
 
         if corefile:
             try:
                 self.loadcore(corefile)
             except IOError:
-                self.__init_core()
+                self.clear_core()
         else:
-            self.__init_core()
+            self.clear_core()
 
         self.set_ROM(boot_rom)
         
@@ -106,11 +107,15 @@ class Memory(object):
 #        else:
 #            pass
 
-    def __init_core(self):
-        """Initialize memory to all zeros."""
+    def clear_core(self):
+        """Clears memory to all zeros.
+        
+        If using ROM, that is unchanged.
+        """
 
         for i in range(MEMORY_SIZE):
             self.memory.append(0)
+        self.set_ROM(self.boot_rom)
 
     def loadcore(self, file=None):
         """Load core from a file.  Read 16 bit values as big-endian."""
@@ -175,7 +180,7 @@ class Memory(object):
         elif type == ROM_TTY:
             self.using_rom = True
             i = self.ROM_START
-            for ptr_value in self.PTR_TTY_IMAGE:
+            for ptr_value in self.TTY_ROM_IMAGE:
                 self.memory[i] = ptr_value
                 i += 1
         else:

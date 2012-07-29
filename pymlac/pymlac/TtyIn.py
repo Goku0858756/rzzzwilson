@@ -1,77 +1,81 @@
 #!/usr/bin/python 
 
 """
-Class to emulate the Input TTY (TTYIN).
+Emulate the Input TTY (TTYIN).
 """
-
 
 from Globals import *
 
 
-class TtyIn(object):
-    # define various internal states
-    DEVICE_NOT_READY = 0
-    DEVICE_READY = 1
-    TTYIN_CHARS_PER_SECOND = 1000
-    DEVICE_READY_CYCLES = int(CYCLES_PER_SECOND / TTYIN_CHARS_PER_SECOND)
+# define various internal states
+DEVICE_NOT_READY = 0
+DEVICE_READY = 1
+TTYIN_CHARS_PER_SECOND = 1000
+DEVICE_READY_CYCLES = int(CYCLES_PER_SECOND / TTYIN_CHARS_PER_SECOND)
 
-    def __init__(self):
-        self.filename = None
-        self.open_file = None
-        self.value = 0
-        self.atEOF = 1
-        self.cycle_count = 0
-        self.isready = self.DEVICE_NOT_READY
+# module-level state variables
+filename = None
+open_file = None
+value = 0
+atEOF = 1
+cycle_count = 0
+isready = DEVICE_NOT_READY
 
-    def mount(self, filename):
-        self.filename = filename
-        self.open_file = open(filename, 'r')
-        self.value = 0
-        self.atEOF = 0
-        self.cycle_count = self.DEVICE_READY_CYCLES
-        self.isready = self.DEVICE_NOT_READY
 
-    def dismount(self):
-        if self.open_file:
-            self.open_file.close()
-        self.filename = None
-        self.open_file = None
-        self.value = 0
-        self.atEOF = 1
-        self.isready = self.DEVICE_NOT_READY
+def init():
+    global filename, open_file, value, atEOF, cycle_count, isready
 
-    def read(self):
-        return self.value
+    filename = None
+    open_file = None
+    value = 0
+    atEOF = 1
+    cycle_count = 0
+    isready = DEVICE_NOT_READY
 
-    def ready(self):
-        return (self.isready == self.DEVICE_READY)
+def mount(fname):
+    global filename, open_file, value, atEOF, cycle_count, isready
 
-    def clear(self):
-        self.isready = self.DEVICE_NOT_READY
+    filename = fname
+    open_file = open(filename, 'r')
+    value = 0
+    atEOF = 0
+    cycle_count = DEVICE_READY_CYCLES
+    isready = DEVICE_NOT_READY
 
-    def tick(self, cycles):
-        if (not self.atEOF):
-            self.cycle_count -= cycles
-            if self.cycle_count <= 0:
-                self.cycle_count = self.DEVICE_READY_CYCLES
-                self.value = self.open_file.read(1)
-                self.isready = self.DEVICE_READY
-                if len(self.value) < 1:
-                    self.atEOF = 1
-                    self.value = 0
-                    self.cycle_count = 0
-                    self.isready = self.DEVICE_NOT_READY
+def dismount():
+    global filename, open_file, value, atEOF, cycle_count, isready
 
-def test_main():
-    """ Test the emulation of the TTYIN device """
-    ttyin = TtyIn()
-    ttyin.mount('test')
-    while 1:
-        while not ttyin.ready():
-            ttyin.tick(2)
-        char = ttyin.read()
-        print 'is "' + char + '"'
-        ttyin.clear()
+    if open_file:
+        open_file.close()
+    filename = None
+    open_file = None
+    value = 0
+    atEOF = 1
+    isready = DEVICE_NOT_READY
 
-if __name__ == '__main__':
-    test_main()
+def read():
+    return value
+
+def ready():
+    return (isready == DEVICE_READY)
+
+def clear():
+    global filename, open_file, value, atEOF, cycle_count, isready
+
+    isready = DEVICE_NOT_READY
+
+def tick(cycles):
+    global filename, open_file, value, atEOF, cycle_count, isready
+
+    if (not atEOF):
+        cycle_count -= cycles
+        if cycle_count <= 0:
+            cycle_count = DEVICE_READY_CYCLES
+            value = open_file.read(1)
+            isready = DEVICE_READY
+            if len(value) < 1:
+                atEOF = 1
+                value = 0
+                cycle_count = 0
+                isready = DEVICE_NOT_READY
+

@@ -9,142 +9,96 @@ import sys
 
 from Globals import *
 
-import Ptr, Ptp,TtyIn, TtyOut
-import Kbd
+import Ptr
+import Ptp
+import TtyIn
+import TtyOut
 import Memory
 import MainCPU
 import DisplayCPU
-import Display
-import Panel
 import Trace
 
 
-class Imlac(object):
-    def __init__(self, run_address, tracefile, tracestart, traceend,
-                 boot_rom=None, corefile=None):
-        self.main_running = 1
-        self.display_running = 0
-        self.memory = Memory.Memory(boot_rom, corefile)
-        self.trace = Trace.Trace(tracefile)
-        self.tracestart = tracestart
-        self.traceend = traceend
-        self.kbd = Kbd.Kbd()
-        self.ptr = Ptr.Ptr()
-        self.ptp = Ptp.Ptp()
-        self.ttyin = TtyIn.TtyIn()
-        self.ttyout = TtyOut.TtyOut()
-#        self.font_data = pygame.font.Font(None, 21)
-#        self.font_label = pygame.font.Font(None, 24)
-#        self.panel = Panel.Panel(PYMLAC_VERSION, self.font_data, self.font_label)
-#        self.display = Display.Display(screen)
-        self.displaycpu = DisplayCPU.DisplayCPU(self.trace, self.memory,
-#                                                self.panel, self.display,
-                                                self.kbd, self.ptr, self.ptp,
-                                                self.ttyin, self.ttyout)
-        self.main = MainCPU.MainCPU(self.trace, self.memory,
-#                                    self.panel, self.displaycpu, self.display,
-                                    self.displaycpu,
-                                    self.kbd, self.ptr, self.ptp, self.ttyin,
-                                    self.ttyout, run_address)
-    def close(self, corefile=None):
-        if corefile:
-            self.memory.savecore(corefile)
-        sys.exit()
+# module-level variables
+main_running = False
+display_running = False
+tracestart = None
+traceend = None
+DS = 0100000            # dataswitches
 
-    def set_ROM(self, type):
-        self.memory.set_ROM(type)
 
-    def ptr_mount(self, filename):
-        self.ptr.mount(filename)
+def init(run_address, tracefile, tstart, tend, boot_rom=None, corefile=None):
+    global tracestart, traceend
 
-    def ptp_mount(self, filename):
-        self.ptp.mount(filename)
+    Memory.init(boot_rom, corefile)
+    Trace.init(tracefile)
+    tracestart = tstart
+    traceend = tend
+    DisplayCPU.init()
+    MainCPU.init()
 
-    def ttyin_mount(self, filename):
-        self.ttyin.mount(filename)
+def close(corefile=None):
+    if corefile:
+        Memory.savecore(corefile)
+    sys.exit()
 
-    def ttyout_mount(self, filename):
-        self.ttyout.mount(filename)
+def set_ROM(type):
+    Memory.set_ROM(type)
 
-    def ptr_dismount(self):
-        self.ptr.dismount()
+def set_boot(romtype):
+    pass
 
-    def ptp_dismount(self):
-        self.ptp.dismount()
+def __tick_all(cycles):
+    Ptr.tick(cycles)
+    Ptp.tick(cycles)
+    TtyIn.tick(cycles)
+    TtyOut.tick(cycles)
 
-#    def pump(self):
-#        pass
-#        self.panel.updateAC(MainCPU.AC)
-#        self.panel.updatePC(MainCPU.PC)
+def set_trace(tstart, tend=None):
+    """Set trace to required range of values."""
 
-    def ttyin_dismount(self):
-        self.ttyin.dismount()
+    global tracestart, traceend
 
-    def ttyout_dismount(self):
-        self.ttyout.dismount()
+    if tstart:
+        tracestart = tstart
+        traceend = tend
+        Trace.tracing = True
+    else:
+        Trace.tracing = False
 
-    def ptr_start(self):
-        self.ptr.start()
+def execute_once():
+    if traceend is None:
+        if MainCPU.PC == tracestart:
+            Trace.settrace(True)
+    else:
+        Trace.settrace(MainCPU.PC >= tracestart and MainCPU.PC <= traceend)
 
-    def ptp_start(self):
-        self.ptp.start()
+    if DisplayCPU.ison():
+        Trace.trace('%6.6o' % DisplayCPU.DPC)
+    Trace.trace('\t')
 
-    def ttyin_start(self):
-        self.ttyin.start()
+    instruction_cycles = DisplayCPU.execute_one_instruction()
 
-    def ttyout_start(self):
-        self.ttyout.start()
+    Trace.trace('%6.6o\t' % MainCPU.PC)
 
-    def ptr_stop(self):
-        self.ptr.stop()
+    instruction_cycles += MainCPU.execute_one_instruction()
 
-    def ptp_stop(self):
-        self.ptp.stop()
+    Trace.itraceend(DisplayCPU.ison())
 
-    def ttyin_stop(self):
-        self.ttyin.stop()
+    __tick_all(instruction_cycles)
 
-    def ttyout_stop(self):
-        self.ttyout.stop()
+    if not DisplayCPU.ison() and not MainCPU.running:
+        return 0
 
-    def set_boot(self, romtype):
+    return instruction_cycles
+
+def run():
+    """Start the machine and run until it halts."""
+
+    MainCPU.running = True
+
+    while execute_once() > 0:
         pass
 
-    def run(self, pc=None):
-        self.running = 1
-        if not pc is None:
-            #regs.pc = MEMORY_MASK(pc)
-            regs.pc = pc
+    MainCPU.running = False
 
-    def __tick_all(self, cycles):
-        self.ptr.tick(cycles)
-        self.ptp.tick(cycles)
-        self.ttyin.tick(cycles)
-        self.ttyout.tick(cycles)
-#        self.display.tick(cycles)
-
-    def execute_once(self):
-        if self.traceend == None:
-            if MainCPU.PC == self.tracestart:
-                self.trace.settrace(True)
-        else:
-            self.trace.settrace(MainCPU.PC >= self.tracestart and MainCPU.PC <= self.traceend)
-
-        if self.displaycpu.ison():
-            self.trace.trace('%6.6o' % DisplayCPU.DPC)
-        self.trace.trace('\t')
-
-        instruction_cycles = self.displaycpu.execute_one_instruction()
-
-        self.trace.trace('%6.6o\t' % MainCPU.PC)
-
-        instruction_cycles += self.main.execute_one_instruction()
-
-        self.trace.itraceend(self.displaycpu.ison())
-
-        self.__tick_all(instruction_cycles)
-
-        if not self.displaycpu.ison() and not self.main.running:
-            return 0
-
-        return instruction_cycles

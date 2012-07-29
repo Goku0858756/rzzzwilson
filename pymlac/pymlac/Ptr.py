@@ -1,125 +1,116 @@
 #!/usr/bin/python 
 
 """
-Class to emulate the imlac Paper Tape Reader (PTR).
+Emulate the imlac Paper Tape Reader (PTR).
 
 We take some pains to closely emulate the *real* PTR device, even
 including misuse, such as no tape mounted.  This means we must tell
-the PTR object how many CPU cycles have passed (self.tick()).
+the PTR object how many CPU cycles have passed (tick()).
 """
 
 from Globals import *
 
 
-class Ptr(object):
-    """Class for imlac Paper Tape Reader (PTR)."""
+# number of chars per second we want
+CharsPerSecond = 300
 
-    # number of chars per second we want
-    CharsPerSecond = 300
+# duty cycle for PTR is 30% ready and 70% not ready
+ReadyCycles = int((CYCLES_PER_SECOND / CharsPerSecond) / 0.7) / 25
+NotReadyCycles = int((CYCLES_PER_SECOND / CharsPerSecond) / 0.3) / 25
 
-    # duty cycle for PTR is 30% ready and 70% not ready
-    ReadyCycles = int((CYCLES_PER_SECOND / CharsPerSecond) / 0.7) / 25
-    NotReadyCycles = int((CYCLES_PER_SECOND / CharsPerSecond) / 0.3) / 25
+# no tape in reader, return 0377 (all holes see light)
+PtrEOF = 0377
 
-    # no tape in reader, return 0377 (all holes see light)
-    PtrEOF = 0377
+# module-level state variables
+motor_on = False
+device_ready = False
+open_file = None
+filename = None
+at_eof = True
+value = PtrEOF
+cycle_count = 0
 
-    def __init__(self):
-        self.motor_on = False
-        self.device_ready = False
-        self.filename = None
-        self.at_eof = True
-        self.value = self.PtrEOF
-        self.cycle_count = 0
 
-    def mount(self, filename):
-        self.motor_on = False
-        self.device_ready = False
-        self.filename = filename
-        self.open_file = open(filename, 'r')
-        self.at_eof = False
-        self.value = self.PtrEOF
+def init():
+    global motor_on, device_ready, filename, at_eof, value, cycle_count, open_file
 
-    def dismount(self):
-        self.motor_on = False
-        self.device_ready = False
-        if self.filename:
-            self.open_file.close()
-        self.filename = None
-        self.at_eof = True
-        self.value = self.PtrEOF
+    motor_on = False
+    device_ready = False
+    open_file = None
+    filename = None
+    at_eof = True
+    value = PtrEOF
+    cycle_count = 0
 
-    def start(self):
-        self.motor_on = True
-        self.device_ready = False
-        self.cycle_count = self.NotReadyCycles
+def mount(fname):
+    global motor_on, device_ready, filename, at_eof, value, cycle_count, open_file
 
-    def stop(self):
-        self.motor_on = False
-        self.device_ready = False
-        self.cycle_count = self.NotReadyCycles
+    motor_on = False
+    device_ready = False
+    filename = fname
+    open_file = open(filename, 'r')
+    at_eof = False
+    value = PtrEOF
 
-    def read(self):
-        return self.value
+def dismount():
+    global motor_on, device_ready, filename, at_eof, value, cycle_count, open_file
 
-    def eof(self):
-        return self.at_eof
+    motor_on = False
+    device_ready = False
+    if filename:
+        open_file.close()
+    filename = None
+    at_eof = True
+    value = PtrEOF
 
-    def tick(self, cycles):
-        """Called to push PTR state along.
+def start():
+    global motor_on, device_ready, filename, at_eof, value, cycle_count, open_file
 
-        cycles  number of cycles passed since last tick
-        """
+    motor_on = True
+    device_ready = False
+    cycle_count = NotReadyCycles
 
-        # if end of tape or motor off, do nothing, state remains unchanged
-        if self.at_eof or not self.motor_on:
-            return
+def stop():
+    global motor_on, device_ready, filename, at_eof, value, cycle_count, open_file
 
-        self.cycle_count -= cycles
-        if self.cycle_count <= 0:
-            if self.device_ready:
-                self.device_ready = False
-                self.cycle_count += self.NotReadyCycles
+    motor_on = False
+    device_ready = False
+    cycle_count = NotReadyCycles
+
+def read():
+    return value
+
+def eof():
+    return at_eof
+
+def tick(cycles):
+    """Called to push PTR state along.
+
+    cycles  number of cycles passed since last tick
+    """
+
+    global motor_on, device_ready, filename, at_eof, value, cycle_count, open_file
+
+    # if end of tape or motor off, do nothing, state remains unchanged
+    if at_eof or not motor_on:
+        return
+
+    cycle_count -= cycles
+    if cycle_count <= 0:
+        if device_ready:
+            device_ready = False
+            cycle_count += NotReadyCycles
+        else:
+            device_ready = True
+            cycle_count += ReadyCycles
+            value = open_file.read(1)
+            if len(value) < 1:
+                # EOF on input file, pretend end of tape
+                at_eof = True
+                value = PtrEOF
             else:
-                self.device_ready = True
-                self.cycle_count += self.ReadyCycles
-                self.value = self.open_file.read(1)
-                if len(self.value) < 1:
-                    # EOF on input file, pretend end of tape
-                    self.at_eof = True
-                    self.value = self.PtrEOF
-                else:
-                    self.value = ord(self.value)
+                value = ord(value)
 
-    def ready(self):
-        return self.device_ready
-
-
-if __name__ == '__main__':
-    """ Test the emulation of the PTR device """
-
-    import sys
-    import log
-    log = log.Log('ptr.log', log.Log.DEBUG)
-
-    ptr = Ptr()
-    ptr.mount('test1.ptp')
-    ptr.start()
-    while not ptr.eof():
-        timeout = 1000000
-        while not ptr.ready():
-            ptr.tick(2)
-            timeout -= 1
-            if timeout < 0:
-                print('TIMEOUT')
-                sys.exit(0)
-        char = ptr.read()
-        log('byte is \\%3.3o (0x%02x)' % (char, char))
-        timeout = 1000000
-        while ptr.ready():
-            ptr.tick(2)
-            timeout -= 1
-            if timeout < 0:
-                print('TIMEOUT')
-                sys.exit(0)
+def ready():
+    return device_ready
 

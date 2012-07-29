@@ -7,8 +7,8 @@ We must emulate funny Imlac key values.
 """
 
 
-import pygame
-from pygame.locals import *
+#import pygame
+#from pygame.locals import *
 
 
 ######
@@ -69,18 +69,19 @@ class Kbd(object):
         self.clear()
 
     def handle_events(self):
-        for event in pygame.event.get():
-            if (event.type == KEYDOWN):
-                if (event.key < 300) and ord(keyval[event.key]) != 0:
-                    self.value = ord(keyval[event.key])
-                    if (event.mod & 0x03 or event.mod & 0x2000):	# handle SHIFT
-                        self.value = ord(skeyval[event.key]) | 0x0100
-                    if (event.mod & 0x00C0):				# handle CONTROL
-                        self.value = self.value | 0x0200
-                    if (event.mod & 0x0300):				# handle REPEAT
-                        self.value = self.value | 0x0400
-                    self.ready = 1
-                    return
+        pass
+#        for event in pygame.event.get():
+#            if (event.type == KEYDOWN):
+#                if (event.key < 300) and ord(keyval[event.key]) != 0:
+#                    self.value = ord(keyval[event.key])
+#                    if (event.mod & 0x03 or event.mod & 0x2000):	# handle SHIFT
+#                        self.value = ord(skeyval[event.key]) | 0x0100
+#                    if (event.mod & 0x00C0):				# handle CONTROL
+#                        self.value = self.value | 0x0200
+#                    if (event.mod & 0x0300):				# handle REPEAT
+#                        self.value = self.value | 0x0400
+#                    self.ready = 1
+#                    return
 
     def is_ready(self):
         return self.ready

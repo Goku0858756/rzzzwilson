@@ -5,7 +5,7 @@ Globals used throughout the emulator.
 """
 
 
-from pygame.locals import *
+#from pygame.locals import *
 
 
 # Version of the emulator
@@ -175,7 +175,7 @@ ROM_TTY = 2
 ROM_NONE = 3
 
 # The pygame user-defined event number used for state changes
-IMLAC_EVENT = USEREVENT + 1
+#IMLAC_EVENT = USEREVENT + 1
 
 # The 4K 'local' mask
 ADDRHIGHMASK = 0x7800

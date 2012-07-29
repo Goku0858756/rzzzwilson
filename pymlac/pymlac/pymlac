@@ -11,6 +11,11 @@ import os
 
 from Globals import *
 import Imlac
+
+import Memory
+import Ptr
+import Ptp
+import MainCPU
 import Trace
 
 
@@ -218,39 +223,50 @@ def main():
     # Initialize the emulator.
 #run address, trace all NOT SET!
     boot_rom = 'ptr'    # default ROM loader
-    imlac = Imlac.Imlac(0, TRACE_FILENAME, None,
-                        None, boot_rom, CORE_FILENAME)
+    Imlac.init(0, TRACE_FILENAME, None, None, boot_rom, CORE_FILENAME)
 
     # now perform operations
     for (operation, args) in ops:
         if operation == 'boot':
-            imlac.set_ROM(args)
+            Memory.set_ROM(args)
         elif operation == 'clear':
-            imlac.memory.clear_core()
+            Memory.clear_core()
         elif operation == 'load_ptp':
-            imlac.ptp_mount(args)
+            Ptp.mount(args)
         elif operation == 'load_ptr':
-            imlac.ptr_mount(args)
+            Ptr.mount(args)
         elif operation == 'data':
-            imlac.DS = args
+            MainCPU.DS = args
         elif operation == 'run':
-            print('run: %s' % str(args))
+            MainCPU.PC = args
+            Imlac.run()
         elif operation == 'set':
             print('set: %s' % str(args))
         elif operation == 'trace':
-            print('trace: %s' % str(args))
+            if args == 'off':
+                Imlac.tracestart = None
+                Imlac.traceend = None
+            else:
+                (start, end) = args
+                Imlac.tracestart = start
+                Imlac.traceend = end
         elif operation == 'ttyin':
-            print('ttyin: %s' % str(args))
+            TtyIn.mount(args)
         elif operation == 'ttyout':
-            print('ttyout: %s' % str(args))
+            TtyOut.mount(args)
         elif operation == 'view':
             print('view: %s' % str(args))
         elif operation == 'write':
-            print('write: %s' % str(args))
+            if args == 'on':
+                Memory.using_rom = True
+            elif args == 'off':
+                Memory.using_rom = False
+            else:
+                abort("Invalid view arg: %s" % args)
         else:
             abort('Invalid internal operation: %s' % operation)
 
-    imlac.close(CORE_FILENAME)
+    Imlac.close(CORE_FILENAME)
 
 #import profile
 #profile.run('main()', 'profile.out')

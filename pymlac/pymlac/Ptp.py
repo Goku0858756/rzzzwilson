@@ -1,100 +1,85 @@
 #!/usr/bin/python 
 
 """
-Class to emulate the Paper Tape Punch (PTP).
+Emulate the Paper Tape Punch (PTP).
 """
 
 
 from Globals import *
 
 
-class Ptp(object):
-    # define various internal states
-    MOTOR_ON = 1
-    MOTOR_OFF = 0
-    DEVICE_NOT_READY = 0
-    DEVICE_READY = 1
-    PTP_CHARS_PER_SECOND = 30
-    DEVICE_NOT_READY_CYCLES = int(CYCLES_PER_SECOND / PTP_CHARS_PER_SECOND)
+# define various internal states
+MOTOR_ON = 1
+MOTOR_OFF = 0
+DEVICE_NOT_READY = 0
+DEVICE_READY = 1
+PTP_CHARS_PER_SECOND = 30
+DEVICE_NOT_READY_CYCLES = int(CYCLES_PER_SECOND / PTP_CHARS_PER_SECOND)
 
-    def __init__(self):
-        self.motor_state = self.MOTOR_OFF
-        self.device_state = self.DEVICE_NOT_READY
-        self.filename = None
-        self.open_file = None
+# module-level state variables
+motor_state = MOTOR_OFF
+device_state = DEVICE_NOT_READY
+filename = None
+open_file = None
 
-    def mount(self, filename):
-        self.motor_state = self.MOTOR_OFF
-        self.device_state = self.DEVICE_NOT_READY
-        self.filename = filename
-        self.open_file = open(filename, 'w')
 
-    def dismount(self):
-        self.motor_state = self.MOTOR_OFF
-        self.device_state = self.DEVICE_NOT_READY
-        if self.open_file:
-            self.open_file.close()
-        self.filename = None
-        self.open_file = None
+def init():
+    global motor_state, device_state, filename, open_file
 
-    def start(self):
-        self.motor_state = self.MOTOR_ON
-        self.device_state = self.DEVICE_NOT_READY
-        self.cycle_count = self.DEVICE_NOT_READY_CYCLES
+    motor_state = MOTOR_OFF
+    device_state = DEVICE_NOT_READY
+    filename = None
+    open_file = None
 
-    def stop(self):
-        self.motor_state = self.MOTOR_OFF
-        self.device_state = self.DEVICE_NOT_READY
+def mount(ptp_filename):
+    global motor_state, device_state, filename, open_file
 
-    def write(self, ch):
-        self.device_state = self.DEVICE_NOT_READY
-        self.cycle_count = self.DEVICE_NOT_READY_CYCLES
-        self.open_file.write(ch)
+    motor_state = MOTOR_OFF
+    device_state = DEVICE_NOT_READY
+    filename = ptp_filename
+    open_file = open(filename, 'w')
 
-    def tick(self, cycles):
-        if self.motor_state == self.MOTOR_OFF or not self.open_file:
-            self.device_state = self.DEVICE_NOT_READY
-            return
+def dismount():
+    global motor_state, device_state, filename, open_file
 
-        self.cycle_count -= cycles
-        if self.cycle_count <= 0:
-            self.device_state = self.DEVICE_READY
+    motor_state = MOTOR_OFF
+    device_state = DEVICE_NOT_READY
+    if open_file:
+        open_file.close()
+    filename = None
+    open_file = None
 
-    def ready(self):
-        return self.device_state == self.DEVICE_READY
+def start():
+    global motor_state, device_state, filename, open_file
 
-def test_main():
-    """ Test the emulation of the PTP device """
-    ptp = Ptp()
-    ptp.mount('testptp')
-    ptp.start()
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('A')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('B')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('C')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('\n')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('X')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('Y')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('Z')
-    while not ptp.ready():
-        ptp.tick(2)
-    char = ptp.write('.')
-    while not ptp.ready():
-        ptp.tick(2)
-    ptp.dismount()
+    motor_state = MOTOR_ON
+    device_state = DEVICE_NOT_READY
+    cycle_count = DEVICE_NOT_READY_CYCLES
 
-if __name__ == '__main__':
-    test_main()
+def stop():
+    global motor_state, device_state, filename, open_file
+
+    motor_state = MOTOR_OFF
+    device_state = DEVICE_NOT_READY
+
+def write(ch):
+    global motor_state, device_state, filename, open_file
+
+    device_state = DEVICE_NOT_READY
+    cycle_count = DEVICE_NOT_READY_CYCLES
+    open_file.write(ch)
+
+def tick(cycles):
+    global motor_state, device_state, filename, open_file
+
+    if motor_state == MOTOR_OFF or not open_file:
+        device_state = DEVICE_NOT_READY
+        return
+
+    cycle_count -= cycles
+    if cycle_count <= 0:
+        device_state = DEVICE_READY
+
+def ready():
+    return device_state == DEVICE_READY
+

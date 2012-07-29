@@ -198,9 +198,9 @@ def usage():
     print('where -b (ptr|tty|none)           sets the bootstrap ROM code, if no device disable ROM')
     print('      -c                          clear core, except bootstrap ROM')
     print('      -d <value>                  set data switches')
+    print('      -h                          prints this help')
     print('      -ptp <file>                 mount <file> on the papertape punch')
     print('      -ptr <file>                 mount <file> on the papertape reader')
-    print('      -h                          prints this help')
     print('      -r (<address>|PC)           execute from the <address>, no address runs from current PC')
     print('      -s <setfile>                sets memory values from file')
     print('      -t (<addr1>[,<addr2>]|off)  controls trace:')
@@ -210,7 +210,7 @@ def usage():
     print('      -ttyin <file>               mount <file> on the teletype reader')
     print('      -ttyout <file>              mount <file> on the teletype writer')
     print('      -v <viewfile>               prints memory locations from file')
-    print('      -w on|off                   turn ROM writability ON or OFF')
+    print('      -w (on|off)                 turn ROM writability ON or OFF')
     sys.exit()
 
 

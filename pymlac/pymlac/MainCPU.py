@@ -369,7 +369,7 @@ def i_CTB(indirect, address, instruction):
     return 1
 
 def i_DOF(indirect, address, instruction):
-    Displaycpu.stop()
+    DisplayCPU.stop()
     Trace.itrace('DOF')
     return 1
 
@@ -655,7 +655,7 @@ def i_SAR3(indirect, address, instruction):
 
 def i_DON(indirect, address, instruction):
     DisplayCPU.DRSindex = 0
-    Displaycpu.start()
+    DisplayCPU.start()
     Trace.itrace('DON')
     return 1
 
@@ -710,7 +710,7 @@ def i_LSN():
 def i_DSF():
     global PC
 
-    if Displaycpu.ison():
+    if DisplayCPU.ison():
         PC = (PC + 1) & WORDMASK
     Trace.itrace('DSF')
     return 1
@@ -718,7 +718,7 @@ def i_DSF():
 def i_DSN():
     global PC
 
-    if not Displaycpu.ison():
+    if not DisplayCPU.ison():
         PC = (PC + 1) & WORDMASK
     Trace.itrace('DSN')
     return 1

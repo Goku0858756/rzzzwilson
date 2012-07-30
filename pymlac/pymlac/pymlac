@@ -260,8 +260,13 @@ def main():
                 (start, end) = args
                 Imlac.tracestart = start
                 Imlac.traceend = end
-            Trace.comment('Trace set to (%s, %s)'
-                          % (str(Imlac.tracestart), str(Imlac.traceend)))
+            tstart = str(Imlac.tracestart)
+            if Imlac.tracestart is not None:
+                tstart = '%06o' % Imlac.tracestart
+            tend = str(Imlac.traceend)
+            if Imlac.traceend is not None:
+                tend = '%06o' % Imlac.traceend
+            Trace.comment('Trace set to (%s, %s)' % (tstart, tend))
         elif operation == 'ttyin':
             TtyIn.mount(args)
             Trace.comment("File '%s' mounted on TTYIN" % args)

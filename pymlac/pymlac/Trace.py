@@ -14,7 +14,6 @@ import DisplayCPU
 # module-level state variables
 tracing = False
 tracefile = None
-comment = None
 
 
 def init(filename):
@@ -57,8 +56,6 @@ def itrace(opcode, indirect=False, address=None):
             tracefile.write('%s\t%s%5.5o\t' % (opcode, char, address))
 
 def itraceend(dispon):
-    global comment
-
     if dispon:
         trace('L=%1.1o AC=%6.6o DX=%5.5o DY=%6.6o\n' %
                    (MainCPU.L, MainCPU.AC, DisplayCPU.DX, DisplayCPU.DY))

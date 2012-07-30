@@ -1,7 +1,7 @@
 #!/usr/bin/python 
 
 """
-Class to emulate the Keyboard (KBD).
+Emulate the Keyboard (KBD).
 
 We must emulate funny Imlac key values.
 """
@@ -63,50 +63,30 @@ skeyval = ('\000\000\000\000\000\000\000\000\000\211\000\000\000\215\000\000'#00
            '\000\000\000\000\000\000\000\000\000\000\000\000\000')           #12
 
 
-class Kbd(object):
-    def init(self):
-        self.value = 0
-        self.clear()
+def init(self):
+    self.value = 0
+    self.clear()
 
-    def handle_events(self):
-        pass
-#        for event in pygame.event.get():
-#            if (event.type == KEYDOWN):
-#                if (event.key < 300) and ord(keyval[event.key]) != 0:
-#                    self.value = ord(keyval[event.key])
-#                    if (event.mod & 0x03 or event.mod & 0x2000):	# handle SHIFT
-#                        self.value = ord(skeyval[event.key]) | 0x0100
-#                    if (event.mod & 0x00C0):				# handle CONTROL
-#                        self.value = self.value | 0x0200
-#                    if (event.mod & 0x0300):				# handle REPEAT
-#                        self.value = self.value | 0x0400
-#                    self.ready = 1
-#                    return
+def handle_events(self):
+    pass
+#    for event in pygame.event.get():
+#        if (event.type == KEYDOWN):
+#            if (event.key < 300) and ord(keyval[event.key]) != 0:
+#                self.value = ord(keyval[event.key])
+#                if (event.mod & 0x03 or event.mod & 0x2000):	# handle SHIFT
+#                    self.value = ord(skeyval[event.key]) | 0x0100
+#                if (event.mod & 0x00C0):				# handle CONTROL
+#                    self.value = self.value | 0x0200
+#                if (event.mod & 0x0300):				# handle REPEAT
+#                    self.value = self.value | 0x0400
+#                self.ready = 1
+#                return
 
-    def is_ready(self):
-        return self.ready
+def is_ready(self):
+    return self.ready
 
-    def clear(self):
-        self.ready = 0
+def clear(self):
+    self.ready = 0
 
-    def read(self):
-        return self.value
-
-
-def test_main():
-    """ Test the emulation of the KBD device """
-    pygame.init()
-    screen = pygame.display.set_mode((640, 480))
-    pygame.display.set_caption('pymlac KBD emulation')
-
-    kbd = Kbd()
-    kbd.clear()
-    while (1):
-        kbd.handle_events()
-        if (kbd.is_ready()):
-            print oct(kbd.read())
-            kbd.clear()
-
-
-if __name__ == '__main__':
-    test_main()
+def read(self):
+    return self.value

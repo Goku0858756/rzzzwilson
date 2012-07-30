@@ -80,7 +80,8 @@ def doDEIMByte(byte):
             mode = MODE_NORMAL
         if byte & 0x20:		# DRJM
             if DRSindex <= 0:
-                print '\nDRS stack underflow at display address %6.6o' % (DPC - 1)
+                Trace.comment('\nDRS stack underflow at display address %6.6o'
+                              % (DPC - 1))
                 illegal()
             DRSindex -= 1
             DPC = DRS[DRSindex]
@@ -128,9 +129,11 @@ def execute_one_instruction():
 
 def illegal(instruction=None):
     if instruction:
-        print 'Illegal display instruction (', '%6.6o' % instruction, ') at address', '%6.6o' % (DPC - 1)
+        Trace.comment('Illegal display instruction (%6.6o) at address %6.6o'
+                      % (instruction, (DPC - 1)))
     else:
-        print 'Illegal display instruction at address', '%6.6o' % (DPC - 1)
+        Trace.comment('Illegal display instruction at address %6.6o'
+                      % (DPC - 1))
     sys.exit(0)
 
 def ison():
@@ -184,7 +187,8 @@ def i_DJMS(address):
     global DPC, DRSindex, DIB
 
     if DRSindex >= 8:
-        print 'DRS stack overflow at display address %6.6o' % (DPC - 1)
+        Trace.comment('DRS stack overflow at display address %6.6o'
+                      % (DPC - 1))
         illegal()
     DRS[DRSindex] = DPC
     DRSindex += 1
@@ -253,7 +257,8 @@ def i_DRJM():
     global DPC, DRSindex
 
     if DRSindex <= 0:
-       print '\nDRS stack underflow at display address %6.6o' % (DPC - 1)
+       Trace.comment('DRS stack underflow at display address %6.6o'
+                     % (DPC - 1))
        illegal()
     DRSindex -= 1
     DPC = DRS[DRSindex]

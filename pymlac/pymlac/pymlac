@@ -81,7 +81,7 @@ def handle_options():
                                     "-b option must be 'ptr' or 'tty' or 'none'")
                 index += 1
                 next_arg = next_arg.lower()
-                next_arg = RomTypeMap.get(next_arg, False)
+                #next_arg = RomTypeMap.get(next_arg, False)
 
                 if next_arg:
                     op = ('boot', next_arg)
@@ -221,7 +221,6 @@ def main():
     ops = handle_options()
 
     # Initialize the emulator.
-#run address, trace all NOT SET!
     boot_rom = 'ptr'    # default ROM loader
     Imlac.init(0, TRACE_FILENAME, None, None, boot_rom, CORE_FILENAME)
 
@@ -229,19 +228,30 @@ def main():
     for (operation, args) in ops:
         if operation == 'boot':
             Memory.set_ROM(args)
+            Trace.comment('Bootstrap ROM set to %s' % args.upper())
         elif operation == 'clear':
             Memory.clear_core()
+            Trace.comment('Core cleared')
         elif operation == 'load_ptp':
             Ptp.mount(args)
+            Trace.comment("File '%s' mounted on PTP" % args)
         elif operation == 'load_ptr':
             Ptr.mount(args)
+            Trace.comment("File '%s' mounted on PTR" % args)
         elif operation == 'data':
             MainCPU.DS = args
+            Trace.comment('Dataswitch value set to %06o' % args)
         elif operation == 'run':
             MainCPU.PC = args
+            Trace.comment('Running from address %06o' % args)
+            if Imlac.tracestart:
+                Trace.comment('DPC\tDisplay\t\tPC\tMain\t\tRegs')
+                Trace.comment('------  -------------   ------  --------------  '
+                              '-----------------------')
             Imlac.run()
+            Trace.comment('Imlac halted')
         elif operation == 'set':
-            print('set: %s' % str(args))
+            Trace.comment("Setting memory from file '%s'" % args)
         elif operation == 'trace':
             if args == 'off':
                 Imlac.tracestart = None
@@ -250,12 +260,16 @@ def main():
                 (start, end) = args
                 Imlac.tracestart = start
                 Imlac.traceend = end
+            Trace.comment('Trace set to (%s, %s)'
+                          % (str(Imlac.tracestart), str(Imlac.traceend)))
         elif operation == 'ttyin':
             TtyIn.mount(args)
+            Trace.comment("File '%s' mounted on TTYIN" % args)
         elif operation == 'ttyout':
             TtyOut.mount(args)
+            Trace.comment("File '%s' mounted on TTYOUT" % args)
         elif operation == 'view':
-            print('view: %s' % str(args))
+            Trace.comment("Viewing memory from file '%s'" % args)
         elif operation == 'write':
             if args == 'on':
                 Memory.using_rom = True
@@ -263,6 +277,7 @@ def main():
                 Memory.using_rom = False
             else:
                 abort("Invalid view arg: %s" % args)
+            Trace.comment('ROM write protect set %s' % args.upper())
         else:
             abort('Invalid internal operation: %s' % operation)
 

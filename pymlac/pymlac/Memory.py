@@ -181,13 +181,13 @@ def set_ROM(romtype=None):
 
     global memory, using_rom
 
-    if romtype == ROM_PTR:
+    if romtype == 'ptr':
         using_rom = True
         i = ROM_START
         for ptr_value in PTR_ROM_IMAGE:
             memory[i] = ptr_value
             i += 1
-    elif romtype == ROM_TTY:
+    elif romtype == 'tty':
         using_rom = True
         i = ROM_START
         for ptr_value in TTY_ROM_IMAGE:
@@ -230,7 +230,7 @@ def put(value, address, indirect):
         address = memory[address] & ADDRMASK
 
     if using_rom and ROM_START <= address <= ROM_END:
-        print('Attempt to write to ROM')
+        Trace.comment('Attempt to write to ROM')
         return
 
     try:

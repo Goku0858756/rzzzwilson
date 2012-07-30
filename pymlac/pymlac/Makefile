@@ -11,7 +11,7 @@ test:	$(TESTS)
 #	./pymlac -b ptr -c -t 0100 40tp_simpleDisplay.ptp -r 0100
 
 %:	%.ptp
-	./pymlac -b ptr -t 0100 -ptr $< -r 040 -r 0100
+	./pymlac -b ptr -ptr $< -r 040 -t 0100 -r 0100
 	diff pymlac.trace good_$*.trace | head -10
 
 %.ptp:	%.asm

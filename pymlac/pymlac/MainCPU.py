@@ -164,7 +164,6 @@ def execute_one_instruction():
     global PC, BlockBase
 
     if not running:
-        print('MainCPU halted')
         return 0
 
     # get instruction word to execute, advance PC

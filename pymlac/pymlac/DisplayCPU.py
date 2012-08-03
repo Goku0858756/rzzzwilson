@@ -7,8 +7,8 @@ The Imlac display CPU.
 
 import sys
 
-import pygame
-from pygame.locals import *
+#import pygame
+#from pygame.locals import *
 
 from Globals import *
 

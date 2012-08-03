@@ -1,0 +1,6 @@
+syntax: glob
+*.pyc
+*.lst
+*.ptp
+*.trace
+*.core

@@ -18,5 +18,5 @@ test:	$(TESTS)
 	./iasm -l $*.lst $<
 
 clean:
-	rm -Rf *.pyc *~ *.out test_*.ptp
+	rm -Rf *.pyc *~ *.out test_*.ptp *.lst
 

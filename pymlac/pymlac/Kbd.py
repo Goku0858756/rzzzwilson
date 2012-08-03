@@ -7,10 +7,6 @@ We must emulate funny Imlac key values.
 """
 
 
-#import pygame
-#from pygame.locals import *
-
-
 ######
 # This string has a \000 char at the PC key ordinal position if the key is dead.
 # Anything else and the key is live and the value is the unshifted value.

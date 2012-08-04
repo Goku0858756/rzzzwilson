@@ -4,3 +4,4 @@ syntax: glob
 *.ptp
 *.trace
 *.core
+iasm

@@ -1,0 +1,44 @@
+So to evaluate each string, we need:
+. The mapping of characters to digit values [0, 35]
+. The base used
+
+The mapping has constraints:
+. the first character in the string cannot map to 0
+. the first character must map to 1 for the minimum value
+
+The base:
+. must be > 1 (given)
+. must be <= 36 (total number of unique characters)
+. must be at least N if we have N unique symbols in the string
+
+How to solve?  The brute-force approach is to generate all
+possible mappings and then avaluate each string for bases
+in the range [2, 36], keeping the minimum.
+
+We recognize that the minimum value for a string will come from
+choosing the minimum possible base.  This is because a 'minimal mapping'
+value must be smaller than the same mapping with a higher value for any
+digit in the string.
+
+So we need to calculate the minimal possible base.
+
+Also, the minimum value will come from a mapping that has the minimum 
+values for leftmost characters.  That is, the first unique symbol in
+the string has value 1 (given).  The second unique leftmost symbol must
+map to value 0 as any other value will result in a larger total value.
+And so on.
+
+Therefore we need to collect the unique symbols in the string in left-first
+order.   That is, if the string is 'abac' the unique symbols are 'abc'.
+
+Generate a value list like [1, 0, 2, 3, 4, ..., 35] and zip() this with the 
+unique symbols.  The zip terminates on the shorter sequence, so:
+    AllValues = range(36)[:]
+    AllValues.remove(1)
+    AllValues.insert(0, 1)
+
+    uniq = 'abc'
+    dictionary = dict(zip(uniq, AllValues))
+gives 'dictionary' as: {'a': 1, 'c': 2, 'b': 0}
+
+Use the dictionary to evaluate the string.

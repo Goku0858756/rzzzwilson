@@ -1,0 +1,5 @@
+[autorun]
+icon=SimpleApp.ico
+label=SimpleApp
+shellexecute=RUN.bat
+action=Run SimpleApp

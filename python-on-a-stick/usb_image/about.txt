@@ -1,0 +1,10 @@
+<html>
+<body>
+<h2>About simple-app</h2>
+<b>simple-app</b> is a simple demonstration to show how an
+application can run from a USB memory stick and access and
+update files on the stick.
+<p>
+Last updated on Wed Jan 25 23:48:45 2012
+</body>
+</html>

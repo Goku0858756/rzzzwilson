@@ -1,0 +1,8 @@
+A program to solve the Google Rope Intranet puzzle:
+
+[http://code.google.com/codejam/contest/619102/dashboard]
+
+The 2.dat file is the dataset described in the above page.
+
+The A-small-practice.in and A-large-practice.in are downloaded
+from the page.  Both are solved correctly.

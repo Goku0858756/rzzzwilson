@@ -5,9 +5,6 @@ Globals used throughout the emulator.
 """
 
 
-#from pygame.locals import *
-
-
 # Version of the emulator
 PYMLAC_VERSION = 'pymlac 0.1'
 
@@ -173,9 +170,6 @@ CYCLES_PER_SECOND = int(1000000 / 1.8)
 ROM_PTR = 1
 ROM_TTY = 2
 ROM_NONE = 3
-
-# The pygame user-defined event number used for state changes
-#IMLAC_EVENT = USEREVENT + 1
 
 # The 4K 'local' mask
 ADDRHIGHMASK = 0x7800

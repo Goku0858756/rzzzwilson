@@ -196,7 +196,7 @@ if __name__ == '__main__':
                 for ops in make_ops():
                     new_closest = evaluate(num, ops, target)
                     if new_closest == target:
-                        print('Solution: %s %s = %d' % (str(num), str(ops), target))
+                        print('Solution: %s %s = %d' % (str(ops), str(num), target))
                         evaluate(num, ops, target, explain=True)
                         raise RuntimeError()
                     new_delta = abs(target - new_closest)

@@ -4,6 +4,12 @@
 Program to make a test dataset.
 
 Usage: make_dataset.py <file> <N>
+
+where <file> is the output filename
+  and <N>    is the number of buildings to generate
+
+The maximum building height is in [1, MaxHeight) and
+the maximum building width is in [1, MaxHeight).
 """
 
 import sys

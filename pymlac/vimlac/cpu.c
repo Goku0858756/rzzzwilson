@@ -8,6 +8,7 @@
 
 #include "vimlac.h"
 #include "cpu.h"
+#include "memory.h"
 
 
 /******
@@ -23,21 +24,14 @@ static WORD            r_DS;	/* data switches */
 static int             CycleCounter;     /* number of cycles for the instruction */
 
 /* 40Hz sync stuff */
-static LONG            Sync40HzCycles;
-static BOOL            Sync40HzOn;
-
-/******
- * Emulated memory.
- ******/
-
-static WORD            Memory[MEMSIZE];
-
+static long            Sync40HzCycles;
+static bool            Sync40HzOn;
 
 /******
  * Environment stuff.  PTR and TTY in and out files, etc
  ******/
 
-static BOOL            MainOn;           /* TRUE if main processor is running */
+static bool            MainOn;           /* TRUE if main processor is running */
 
 
 /******************************************************************************
@@ -80,13 +74,13 @@ illegal(void)
 
     Log("INTERNAL ERROR: "
         "unexpected main processor opcode %06.6o at address %06.6o",
-        Memory[oldPC], oldPC);
+        mem_get(oldPC, false), oldPC);
 
     memdump(LogOut, oldPC - 8, 16);
 
     error("INTERNAL ERROR: "
           "unexpected main processor opcode %06.6o at address %06.6o",
-          Memory[oldPC], oldPC);
+          mem_get(oldPC, false), oldPC);
 }
 
 
@@ -104,7 +98,7 @@ i_LAW_LWC(WORD indirect, WORD address)
     if (indirect)
     {
         // LWC
-        r_AC = (~address + 1) & WORDMASK;
+        r_AC = (~address + 1) & WORD_MASK;
         trace("LWC\t %5.5o", address);
     }
     else
@@ -128,9 +122,7 @@ Description : Emulate the JMP instruction.
 static void
 i_JMP(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_PC = newaddress;
+    r_PC = mem_get_eff_address(address, indirect);
 
     ADDCYCLES(indirect ? 3 :  2);
     if (indirect)
@@ -152,10 +144,7 @@ Description : Emulate the DAC instruction.
 static void
 i_DAC(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    if (AddressWritable(newaddress))
-        Memory[newaddress] = r_AC;
+    mem_put(address, indirect, r_AC);
 
     if (indirect)
         ADDCYCLES(3);
@@ -176,12 +165,10 @@ Description : Emulate the IMLAC XAM instruction.
 static void
 i_XAM(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
     WORD tmp;
 
-    tmp = Memory[newaddress];
-    if (AddressWritable(newaddress))
-        Memory[newaddress] = r_AC;
+    tmp = mem_get(address, indirect);
+    mem_put(address, indirect, r_AC);
     r_AC = tmp;
 
     if (indirect)
@@ -203,11 +190,9 @@ Description : Emulate the ISZ instruction.
 static void
 i_ISZ(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    if (AddressWritable(newaddress))
-        Memory[newaddress] = ++Memory[newaddress] & WORDMASK;
-    if (Memory[newaddress] == 0)
+    new_value = ++mem_get(address, indirect);
+    mem_put(address, indirect, new_value);
+    if (new_value == 0)
         r_PC = (r_PC + 1) & MEMMASK;
 
     if (indirect)
@@ -229,11 +214,10 @@ Description : Emulate the IMLAC JMS instruction.
 static void
 i_JMS(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
+    WORD new_address = mem_get_eff_address(address, indirect);
 
-    if (AddressWritable(newaddress))
-        Memory[newaddress] = r_PC;
-    r_PC = ++newaddress & MEMMASK;
+    mem_put(new_address, false, r_PC);
+    r_PC = ++new_address & MEMMASK;
 
     if (indirect)
         ADDCYCLES(3);
@@ -254,9 +238,7 @@ Description : Emulate the IMLAC AND instruction.
 static void
 i_AND(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_AC = r_AC & Memory[newaddress];
+    r_AC = r_AC & mem_get(address, indirect);
 
     if (indirect)
         ADDCYCLES(3);
@@ -277,9 +259,7 @@ Description : Emulate the IMLAC IOR instruction.
 static void
 i_IOR(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_AC |= Memory[newaddress];
+    r_AC |= mem_get(address, indirect);
 
     if (indirect)
         ADDCYCLES(3);
@@ -300,9 +280,7 @@ Description : Emulate the IMLAC XOR instruction.
 static void
 i_XOR(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_AC ^= Memory[newaddress];
+    r_AC ^= mem_get(address, indirect);
 
     if (indirect)
         ADDCYCLES(3);
@@ -323,9 +301,7 @@ Description : Emulate the IMLAC LAC instruction.
 static void
 i_LAC(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_AC = Memory[newaddress];
+    r_AC = mem_get(address, indirect);
 
     if (indirect)
         ADDCYCLES(3);
@@ -346,12 +322,10 @@ Description : Emulate the ADD instruction.
 static void
 i_ADD(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_AC += Memory[newaddress];
+    r_AC += mem_get(address, indirect);
     if (r_AC & OVERFLOWMASK)
         r_L = r_L ^ 1;
-    r_AC = r_AC & WORDMASK;
+    r_AC = r_AC & WORD_MASK;
 
     if (indirect)
         ADDCYCLES(3);
@@ -372,12 +346,10 @@ Description : Emulate the IMLAC SUB instruction.
 static void
 i_SUB(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    r_AC -= Memory[newaddress];
+    r_AC -= mem_get(address, indirect);
     if (r_AC & OVERFLOWMASK)
         r_L = r_L ^ 1;
-    r_AC = r_AC & WORDMASK;
+    r_AC = r_AC & WORD_MASK;
 
     if (indirect)
         ADDCYCLES(3);
@@ -398,9 +370,7 @@ Description : Emulate the IMLAC SAM instruction.
 static void
 i_SAM(WORD indirect, WORD address)
 {
-    WORD newaddress = GetEffAddress(indirect, address);
-
-    if (r_AC == Memory[newaddress])
+    if (r_AC == mem_get(address, indirect))
         r_PC = (r_PC + 1) & MEMMASK;
 
     if (indirect)
@@ -420,7 +390,7 @@ Description : Emulate the DSF instruction.
 static void
 i_DSF(void)
 {
-    if (DisplayOn != FALSE)
+    if (DisplayOn)
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -458,7 +428,7 @@ Description : Emulate the DSN instruction.
 static void
 i_DSN(void)
 {
-    if (DisplayOn == FALSE)
+    if (!DisplayOn)
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -477,7 +447,7 @@ Description : Emulate the IMLAC HSF instruction.
 static void
 i_HSF(void)
 {
-    if (PTR_isready() != FALSE)
+    if (PTR_isready())
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -496,7 +466,7 @@ Description : Emulate the IMLAC HSN instruction.
 static void
 i_HSN(void)
 {
-    if (PTR_isready() == FALSE)
+    if (!PTR_isready())
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -566,7 +536,7 @@ Description : Emulate the IMLAC KSF instruction.
 static void
 i_KSF(void)
 {
-    if (KB_isready() != FALSE)
+    if (KB_isready())
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -584,7 +554,7 @@ Description : Emulate the IMLAC instruction.
 static void
 i_KSN(void)
 {
-    if (KB_isready() == FALSE)
+    if (!KB_isready())
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -689,7 +659,7 @@ i_RAL(int shift)
         WORD oldlink = r_L;
 
         r_L = (r_AC >> 15) & LOWBITMASK;
-        r_AC = ((r_AC << 1) + oldlink) & WORDMASK;
+        r_AC = ((r_AC << 1) + oldlink) & WORD_MASK;
     }
 
     ADDCYCLES(1);
@@ -714,7 +684,7 @@ i_RAR(int shift)
         WORD oldlink = r_L;
 
         r_L = r_AC & LOWBITMASK;
-        r_AC = ((r_AC >> 1) | (oldlink << 15)) & WORDMASK;
+        r_AC = ((r_AC >> 1) | (oldlink << 15)) & WORD_MASK;
     }
 
     ADDCYCLES(1);
@@ -822,7 +792,7 @@ i_SAL(int shift)
 {
     WORD oldbit0 = r_AC & HIGHBITMASK;
 
-    r_AC = (((r_AC << shift) & ~HIGHBITMASK) | oldbit0) & WORDMASK;
+    r_AC = (((r_AC << shift) & ~HIGHBITMASK) | oldbit0) & WORD_MASK;
 
     ADDCYCLES(1);
 
@@ -845,7 +815,7 @@ i_SAR(int shift)
     {
         WORD oldbit0 = r_AC & HIGHBITMASK;
 
-        r_AC = ((r_AC >> 1) | oldbit0) & WORDMASK;
+        r_AC = ((r_AC >> 1) | oldbit0) & WORD_MASK;
     }
 
     ADDCYCLES(1);
@@ -863,7 +833,7 @@ Description : Emulate the IMLAC SSF instruction.
 static void
 i_SSF(void)
 {
-    if (Sync40HzOn != FALSE)
+    if (Sync40HzOn)
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -881,7 +851,7 @@ Description : Emulate the IMLAC SSN instruction.
 static void
 i_SSN(void)
 {
-    if (Sync40HzOn == FALSE)
+    if (!Sync40HzOn)
         r_PC = (r_PC + 1) & MEMMASK;
 
     ADDCYCLES(1);
@@ -899,7 +869,7 @@ Description : Emulate the IMLAC TCF instruction.
 static void
 i_TCF(void)
 {
-    TTYoutOutputReady = TRUE;
+    TTYoutOutputReady = true;
 
     ADDCYCLES(1);
 
@@ -926,7 +896,7 @@ i_TPC(void)
     else
         Log("TPC: No TTY file, can't emit '%c'", r_AC & 0xff);
 
-    TTYoutOutputReady = FALSE;
+    TTYoutOutputReady = false;
 
     ADDCYCLES(1);
 
@@ -1128,7 +1098,7 @@ microcode(WORD instruction)
 
     // T2
     if (instruction & 002)
-        r_AC = (~r_AC) & WORDMASK;
+        r_AC = (~r_AC) & WORD_MASK;
     if (instruction & 020)
         r_L = (~r_L) & 01;
 
@@ -1137,7 +1107,7 @@ microcode(WORD instruction)
         newac = r_AC + 1;
         if (newac & OVERFLOWMASK)
             r_L = (~r_L) & 01;
-        r_AC = newac & WORDMASK;
+        r_AC = newac & WORD_MASK;
     if (instruction & 040)
         r_AC |= r_DS;
         r_L = (~r_L) & 1;
@@ -1150,7 +1120,7 @@ microcode(WORD instruction)
 
     if ((instruction & 0100000) == 0)
         // bit 0 is clear, it's HLT
-        MainOn == FALSE;
+        MainOn == false;
 //    else:
 //        for (k, op) in micro_singles.items():
 //            if instruction & k:
@@ -1285,7 +1255,7 @@ cpu_execute_one(void)
  * If main processor not running, return immediately.
  ******/
 
-    if (MainOn == FALSE)
+    if (!MainOn)
         return;
 
 /******
@@ -1295,8 +1265,8 @@ cpu_execute_one(void)
 #ifdef JUNK
     if (InterruptsEnabled && (InterruptWait <= 0) && InterruptsPending)
     {
-        InterruptsEnabled = FALSE;
-        i_JMS(FALSE, 0);
+        InterruptsEnabled = false;
+        i_JMS(false, 0);
         return;
     }
 #endif
@@ -1306,7 +1276,7 @@ cpu_execute_one(void)
  ******/
 
     Prev_r_PC = r_PC;
-    instruction = Memory[r_PC++];
+    instruction = mem_get(r_PC++, false);
     r_PC = r_PC & MEMMASK;
 
     indirect = (instruction & 0100000);		/* high bit */
@@ -1380,7 +1350,7 @@ Description : Function to start the main CPU.
 void
 cpu_start(void)
 {
-    MainOn = TRUE;
+    MainOn = true;
 }
 
 

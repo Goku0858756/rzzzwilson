@@ -94,11 +94,11 @@ bool ptr_ready(void)
 
 void ptr_tick(long cycles)
 {
-    // if no state change
+    /* if no state change */
     if (!motor_on || at_eof || open_file == NULL)
         return;
 
-    // tape in, motor on
+    /* tape in, motor on */
     cycle_count -= cycles;
     if (cycle_count <= 0L)
     {
@@ -113,7 +113,7 @@ void ptr_tick(long cycles)
             device_ready = true;
             cycle_count += READY_CYCLES;
             if (fread(&value, sizeof(BYTE), 1, open_file) != 1)
-            {   // assume EOF on file, dismount tape
+            {   /* assume EOF on file, dismount tape */
 		fclose(open_file);
 		open_file = NULL;
                 at_eof = true;

@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <string.h>
 #include <errno.h>
 
@@ -20,5 +21,8 @@ typedef unsigned char	BYTE;
 #define WORD_MASK	0xffff
 #define OVERFLOWMASK	0x10000
 #define LOWBITMASK	0x1
+
+
+void error(char *msg, ...);
 
 #endif

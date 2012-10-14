@@ -180,7 +180,8 @@ def execute_one_instruction():
 
 def illegal(indirect, address, instruction):
     if instruction:
-        msg = 'Illegal instruction (%6.6o) at address %6.6o' % (instruction, PC-1) 
+        msg = ('Illegal instruction (%6.6o) at address %6.6o'
+               % (instruction, PC-1))
     else:
         msg = 'Illegal instruction at address %6.6o' % (PC-1)
     raise RuntimeError(msg)
@@ -191,7 +192,8 @@ def page_00(indirect, address, instruction):
     elif (instruction & 0077000) == 002000:
         return page02_decode.get(instruction, illegal)()
 
-    return page_00_decode.get(instruction, illegal)(indirect, address, instruction)
+    return page_00_decode.get(instruction, illegal)(indirect,
+                                                    address, instruction)
 
 def i_LAW_LWC(indirect, address, instruction):
     global AC

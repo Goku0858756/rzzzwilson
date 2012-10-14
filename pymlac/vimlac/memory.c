@@ -15,10 +15,10 @@
  * constants for the memory
  ******/
 
-// size of memory is 16K words
+/* size of memory is 16K words */
 #define ADDR_MASK	0x3fff
 
-// mask  and limits to check if address is auto-index register
+/* mask  and limits to check if address is auto-index register */
 #define INDEX_MASK	03777
 #define LOWER_INDEX	010
 #define HIGHER_INDEX	017
@@ -33,7 +33,7 @@
 
 static bool rom_readonly = false;
 
-// the physical memory
+/* the physical memory */
 static WORD memory[MEM_SIZE];
 
 /******
@@ -46,10 +46,10 @@ static WORD memory[MEM_SIZE];
 WORD
 mem_get(WORD address, bool indirect)
 {
-    WORD a = address & ADDR_MASK;	// wrap address to physical memory
+    WORD a = address & ADDR_MASK;	/* wrap address to physical memory */
     WORD result;
 
-    if (indirect && AUTO_INDEX(a))	// if auto-index and indirect, increment
+    if (indirect && AUTO_INDEX(a))	/* if auto-index and indirect, increment */
 	memory[a] = (memory[a] + 1) & WORD_MASK;
 
     result = memory[a & ADDR_MASK];
@@ -62,9 +62,9 @@ mem_get(WORD address, bool indirect)
 void
 mem_put(WORD address, bool indirect, WORD value)
 {
-    WORD a = address & ADDR_MASK;	// wrap address to physical memory
+    WORD a = address & ADDR_MASK;	/* wrap address to physical memory */
 
-    if (indirect && AUTO_INDEX(a))	// if auto-index and indirect, increment
+    if (indirect && AUTO_INDEX(a))	/* if auto-index and indirect, increment */
 	memory[a] = (memory[a] + 1) & WORD_MASK;
 
     if (indirect)
@@ -77,7 +77,7 @@ void
 mem_clear(void)
 {
     if (rom_readonly)
-    {	// save the ROM contents
+    {	/* save the ROM contents */
         WORD rom[ROM_SIZE];
 
         memcpy(rom, &memory[ROM_START], sizeof(WORD)*ROM_SIZE);
@@ -101,8 +101,10 @@ mem_set_rom_readonly(bool readonly)
     rom_readonly = readonly;
 }
 
-void mem_load_core(FILE *fd)
+void
+mem_load_core(char *filename)
 {
+    FILE *fd = fopen(filename, "rb");
     WORD addr;
 
     for (addr = 0; addr < MEM_SIZE; ++addr)
@@ -116,13 +118,17 @@ void mem_load_core(FILE *fd)
 	value = (byte1 << 8) + byte2;
 	memory[addr] = value;
     }
+
+    fclose(fd);
 }
 
-void mem_save_core(FILE *fd)
+void
+mem_save_core(char *filename)
 {
+    FILE *fd = fopen(filename, "wb");
     WORD addr;
 
-    // write memory in bytes, get around endian problems
+    /* write memory in bytes, get around endian problems */
     for (addr = 0; addr < MEM_SIZE; ++addr)
     {
         unsigned char byte;
@@ -134,4 +140,6 @@ void mem_save_core(FILE *fd)
 	byte = value & 0xff;
 	fwrite(&byte, 1, 1, fd);
     }
+
+    fclose(fd);
 }

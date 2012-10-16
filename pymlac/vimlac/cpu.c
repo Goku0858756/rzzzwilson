@@ -95,7 +95,6 @@ cpu_get_PC(void)
 void
 cpu_set_PC(WORD new_pc)
 {
-    printf("PC <- 0%6.6o\n", new_pc);
     r_PC = new_pc;
 }
 
@@ -129,8 +128,6 @@ Description : Emulate the IMLAC LAW/LWC instructions.
 static int
 i_LAW_LWC(bool indirect, WORD address)
 {
-    printf("i_LAW_LWC\n");
-
     /* here 'indirect' selects between LWC and LAW */
     if (indirect)
     {
@@ -159,7 +156,10 @@ Description : Emulate the JMP instruction.
 static int
 i_JMP(bool indirect, WORD address)
 {
-    r_PC = mem_get(address, indirect);
+    if (indirect)
+        r_PC = mem_get(address, indirect);
+    else
+	r_PC = address;
 
     trace("JMP\t%c%5.5o", (indirect) ? '*' : ' ', address);
 
@@ -397,48 +397,39 @@ microcode(WORD instruction)
 {
     char trace_msg[10];		/* little buffer for opcode */
 
-    printf("microcode: instruction=0%6.6o\n", instruction);
-
     /* T1 */
     if (instruction & 001)
     {
-	printf("zero AC\n");
         r_AC = 0;
     }
     if (instruction & 010)
     {
-	printf("zero L\n");
         r_L = 0;
     }
 
     /* T2 */
     if (instruction & 002)
     {
-	printf("complement AC\n");
         r_AC = (~r_AC) & WORD_MASK;
     }
     if (instruction & 020)
     {
-	printf("complement L\n");
         r_L = (~r_L) & 01;
     }
 
     /* T3 */
     if (instruction & 004)
     {
-	printf("inc AC\n");
         if (++r_AC & OVERFLOWMASK)
             r_L = (~r_L) & 01;
         r_AC &= WORD_MASK;
     }
     if (instruction & 040)
     {
-	printf("ODA\n");
         r_AC |= r_DS;
         r_L = (~r_L) & 1;
     }
 
-#ifdef JUNK
     /* do some sort of trace */
     strcpy(trace_msg, "");
     switch (instruction)
@@ -457,27 +448,20 @@ microcode(WORD instruction)
         case 0100040: strcat(trace_msg, "ODA"); break;
         case 0100041: strcat(trace_msg, "LDA"); break;
     }
-#endif
 
     if ((instruction & 0100000) == 0)
     {
         /* bit 0 is clear, it's HLT */
-	printf("HLT\n");
         cpu_on = false;
-#ifdef JUNK
 	if (trace_msg[0] != 0)
        	    strcat(trace_msg, "+HLT");
 	else
        	    strcat(trace_msg, "HLT");
-#endif
     }
 
-#ifdef JUNK
     strcat(trace_msg, "\t");
     trace(trace_msg);
-#endif
 
-    printf("microcode: returns 1\n");
     return 1;
 }
 
@@ -1417,8 +1401,6 @@ Description : Further decode the initial '00' opcode instruction.
 static int
 page00(WORD instruction)
 {
-    printf("page00:\n");
-
 /******
  * Pick out microcode or page 2 instructions.
  ******/
@@ -1432,8 +1414,6 @@ page00(WORD instruction)
 /******
  * Decode a page 00 instruction
  ******/
-
-    printf("page00: instruction=0%6.6o\n", instruction);
 
     switch (instruction)
     {
@@ -1531,9 +1511,6 @@ cpu_execute_one(void)
     indirect = (bool) (instruction & 0100000);	/* high bit set? */
     opcode = (instruction >> 11) & 017;		/* high 5 bits */
     address = instruction & 03777;		/* low 11 bits */
-    printf("indirect=%s\n", (indirect) ? "true" : "false");
-    printf("opcode=0%6.6o\n", opcode);
-    printf("address=0%6.6o\n", address);
 
 /******
  * Now decode it.

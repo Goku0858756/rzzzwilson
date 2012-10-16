@@ -70,8 +70,6 @@ mem_put(WORD address, bool indirect, WORD value)
     if (indirect)
 	a = memory[a & ADDR_MASK];
 
-    printf("mem_put: 0%6.6o -> 0%6.6o\n",
-		    value, a);
     memory[a & ADDR_MASK] = value;
 }
 

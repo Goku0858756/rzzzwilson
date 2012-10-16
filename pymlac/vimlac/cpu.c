@@ -92,6 +92,13 @@ cpu_get_PC(void)
 }
 
 
+WORD
+cpu_get_prev_PC(void)
+{
+    return Prev_r_PC;
+}
+
+
 void
 cpu_set_PC(WORD new_pc)
 {
@@ -157,7 +164,7 @@ static int
 i_JMP(bool indirect, WORD address)
 {
     if (indirect)
-        r_PC = mem_get(address, indirect);
+        r_PC = mem_get(address, false);
     else
 	r_PC = address;
 
@@ -239,10 +246,16 @@ Description : Emulate the IMLAC JMS instruction.
 static int
 i_JMS(bool indirect, WORD address)
 {
-    WORD new_address = mem_get(address, indirect);
+    WORD new_address = address;
+
+    if (indirect)
+	new_address = mem_get(address, indirect);
+
+    printf("new_address=0%6.6o\n", new_address);
 
     mem_put(new_address, false, r_PC);
     r_PC = ++new_address & MEMMASK;
+    printf("new PC=0%6.6o\n", r_PC);
 
     trace("JMS\t%c%5.5o", (indirect) ? '*' : ' ', address);
 

@@ -106,6 +106,13 @@ cpu_set_PC(WORD new_pc)
 }
 
 
+void
+cpu_set_DS(WORD new_ds)
+{
+    r_DS = new_ds;
+}
+
+
 /******************************************************************************
 Description : Function to handle unrecognized instruction.
  Parameters : 

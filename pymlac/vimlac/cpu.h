@@ -20,6 +20,7 @@ WORD cpu_get_L(void);
 WORD cpu_get_PC(void);
 WORD cpu_get_prev_PC(void);
 void cpu_set_PC(WORD pc);
+void cpu_set_DS(WORD ds);
 
 
 #endif

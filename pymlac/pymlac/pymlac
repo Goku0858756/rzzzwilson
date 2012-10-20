@@ -33,7 +33,7 @@ def abort(msg):
 def check_int(value, msg):
     """Check that a value is a valid 16 bit positive value.
    
-    We allow decmal and octal number representations.
+    We allow decimal and octal number representations.
     """
 
     try:

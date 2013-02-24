@@ -17,7 +17,7 @@
 	hlt		;
 	lac	minus1	;
 	xor	one	;
-	sam	hbit0	; 0177777 | 1 -> 0177776
+	sam	hbit0	; 0177777 ^ 1 -> 0177776
 	hlt		;
 ; now some indirect XORs
 	law	0	;
@@ -34,7 +34,7 @@
 	hlt		;
 	lac	minus1	;
 	xor	*indone	;
-	sam	hbit0	; 0177777 | 1 -> 0177776
+	sam	hbit0	; 0177777 ^ 1 -> 0177776
 	hlt		;
 	hlt		;
 ; data for tests

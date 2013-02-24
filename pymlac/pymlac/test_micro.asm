@@ -27,7 +27,7 @@
 	iac		; IAC - AC -> 0, L complemented
 	sam	zero	;
 	hlt		;
-	law	0	;
+	lwc	0	;
 	coa		; COA - AC -> 1
 	sam	one	;
 	hlt		;

@@ -642,7 +642,8 @@ def i_SAR2(indirect, address, instruction):
     global AC
 
     high_bit = AC & HIGHBITMASK
-    AC = (AC >> 2) | high_bit
+    AC = (AC >> 1) | high_bit
+    AC = (AC >> 1) | high_bit
     Trace.itrace('SAR', False, 2)
     return 1
 
@@ -650,7 +651,9 @@ def i_SAR3(indirect, address, instruction):
     global AC
 
     high_bit = AC & HIGHBITMASK
-    AC = (AC >> 3) | high_bit
+    AC = (AC >> 1) | high_bit
+    AC = (AC >> 1) | high_bit
+    AC = (AC >> 1) | high_bit
     Trace.itrace('SAR', False, 3)
     return 1
 

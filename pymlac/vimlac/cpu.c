@@ -258,11 +258,8 @@ i_JMS(bool indirect, WORD address)
     if (indirect)
 	new_address = mem_get(address, indirect);
 
-    printf("new_address=0%6.6o\n", new_address);
-
     mem_put(new_address, false, r_PC);
     r_PC = ++new_address & MEMMASK;
-    printf("new PC=0%6.6o\n", r_PC);
 
     trace("JMS\t%c%5.5o", (indirect) ? '*' : ' ', address);
 

@@ -11,10 +11,14 @@ test:	$(TESTS)
 %:	%.ptp
 	./pymlac -b ptr -ptr $< -r 040 -t 0100 -r 0100
 	diff pymlac.trace good_$*.trace | head -10
+	mv pymlac.trace $*.trace
 
 %.ptp:	%.asm
 	../iasm/iasm -l $*.lst $<
 
+lst:	$(TESTS)
+	../iasm/iasm -l $*.lst $<
+
 clean:
-	rm -Rf *.pyc *~ *.out test_*.ptp *.lst
+	rm -Rf *.pyc *~ *.out test_*.ptp *.lst test_*.trace
 

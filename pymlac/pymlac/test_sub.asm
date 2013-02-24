@@ -15,10 +15,19 @@
 	sub	one	;
 	sam	zero	; 1 - 1 -> 0
 	hlt		;
-	cll		;
+	cll		; L <- 0
 	law	0	;
 	sub	one	;
 	sam	minus1	; 0 - 1 -> -1
+	hlt		;
+	lsn		; link should be 1
+	hlt		;
+	stl		; L <- 1
+	law	0	;
+	sub	one	;
+	sam	minus1	; 0 - 1 -> -1
+	hlt		;
+	lsz		; link should be 0
 	hlt		;
 ; now some indirect SUBs
 	law	0	;
@@ -33,9 +42,19 @@
 	sub	*indone	;
 	sam	zero	; 1 - 1 -> 0
 	hlt		;
+	cll		; L <- 0
 	law	0	;
 	sub	*indone	;
 	sam	minus1	; 0 - 1 -> -1
+	hlt		;
+	lsn		; link should be 1
+	hlt		;
+	stl		; L <- 1
+	law	0	;
+	sub	*indone	;
+	sam	minus1	; 0 - 1 -> -1
+	hlt		;
+	lsz		; link should be 0
 	hlt		;
 	hlt		;
 			;

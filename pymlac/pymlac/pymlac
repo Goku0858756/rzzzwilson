@@ -145,10 +145,8 @@ def handle_options():
                                            "-t option must be trace range")
                     trace2 = None
                 elif len(addr) == 2:
-                    trace1 = addr[0]
-                    check_int(trace1, "-t option must be trace range")
-                    trace2 = addr[1]
-                    check_int(trace2, "-t option must be trace range")
+                    trace1 = check_int(addr[0], "-t option must be trace range")
+                    trace2 = check_int(addr[1], "-t option must be trace range")
                 else:
                     abort("-t option must be trace range")
                 op = ('trace', (trace1, trace2))
@@ -260,12 +258,12 @@ def main():
                 (start, end) = args
                 Imlac.tracestart = start
                 Imlac.traceend = end
-            tstart = str(Imlac.tracestart)
+            tstart = Imlac.tracestart
             if Imlac.tracestart is not None:
-                tstart = '%06o' % Imlac.tracestart
-            tend = str(Imlac.traceend)
+                tstart = '%06o' % tstart # Imlac.tracestart
+            tend = Imlac.traceend
             if Imlac.traceend is not None:
-                tend = '%06o' % Imlac.traceend
+                tend = '%06o' % tend # Imlac.traceend
             Trace.comment('Trace set to (%s, %s)' % (tstart, tend))
         elif operation == 'ttyin':
             TtyIn.mount(args)

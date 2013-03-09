@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+import time
+#import Queue
+import collections
+from threading import *
+
 import wx 
 
 WIDTH_SCREEN = 1024
@@ -8,9 +13,9 @@ WIDTH_CONSOLE = 330 # 400 # 256
 HEIGHT_CONSOLE = HEIGHT_SCREEN
 
 SCREEN_COLOUR = (0, 0, 0)
-CONSOLE_COLOUR = (255, 223, 169)
-#PHOSPHOR_COLOUR = '#F0F000'	# yellow
-PHOSPHOR_COLOUR = '#40FF40'	# green
+CONSOLE_COLOUR = (223, 223, 169)
+PHOSPHOR_COLOUR = '#F0F000'	# yellow
+#PHOSPHOR_COLOUR = '#40FF40'	# green
 
 V_MARGIN = 20
 CTL_MARGIN = 15
@@ -19,9 +24,72 @@ LED_MARGIN = 5
 IMAGE_LED_OFF = 'images/led_off.png'
 IMAGE_LED_ON = 'images/led_on.png'
 
-INC = 0.01
+INC = 0.1
 
 count = 1
+
+
+EVT_RESULT_ID = wx.NewId()
+
+def EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, EVT_RESULT_ID, func)
+
+
+class ResultEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, data):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(EVT_RESULT_ID)
+        self.data = data
+
+
+class ImlacCpuThread(Thread):
+
+    def __init__(self, notify_window):
+
+        Thread.__init__(self)
+        self._notify_window = notify_window
+        self._want_abort = 0
+        # This starts the thread running on creation, but you could
+        # also make the GUI thread responsible for calling this
+        self.start()
+
+    def run(self):
+        # This is the code executing in the new thread. Simulation of
+        # a long process (well, 10s here) as a simple loop - you will
+        # need to structure your processing so that you periodically
+        # peek at the abort variable
+        y_offset = 0
+        y_sign = +1
+
+        while True:
+            time.sleep(0.1)
+            if y_sign > 0:
+                y_offset = y_offset + INC
+                if y_offset > HEIGHT_SCREEN-1:
+                    y_sign = -1
+                    y_offset = HEIGHT_SCREEN-1
+            else:
+                y_offset = y_offset - INC
+                if y_offset < 0:
+                    y_sign = +1
+                    y_offset = 0
+            draw_list = ((0, int(y_offset), WIDTH_SCREEN-1,
+                          int(HEIGHT_SCREEN-y_offset-1)),
+                         (0, int(HEIGHT_SCREEN-y_offset-1),
+                          WIDTH_SCREEN-1, int(y_offset)))
+
+            print str(draw_list)
+            wx.PostEvent(self._notify_window, ResultEvent(draw_list))
+
+    def abort(self):
+        """abort CPU thread."""
+
+        # Method for use by main thread to signal an abort
+        self._want_abort = 1
+
 
 class Led_1(object):
     def __init__(self, parent, label, x, y, off, on):
@@ -167,26 +235,30 @@ class MyFrame(wx.Frame):
 
         self.Fit() 
 
-    def on_paint(self, event):
+        EVT_RESULT(self, self.OnResult)
+        #self.Bind(EVT_RESULT, self.OnResult)
+
+        self.worker = ImlacCpuThread(self)
+        self.draw_list = []
+
+    def OnResult(self, event):
+        self.draw_list = event.data
+        print('self.draw_list=%s' % str(self.draw_list))
+        self.Refresh()
+        #self.on_paint()
+
+    def on_paint(self, event=None):
         global count
 
+        #print('on_paint')
         # establish the painting surface
         dc = wx.PaintDC(self.panel_Screen)
         dc.SetBackground(wx.Brush(SCREEN_COLOUR, 1))
         dc.SetPen(wx.Pen(PHOSPHOR_COLOUR, 1))
         dc.Clear()
-        if self.y_sign > 0:
-            self.y_offset = self.y_offset + INC
-            if self.y_offset > HEIGHT_SCREEN-1:
-                self.y_sign = -1
-                self.y_offset = HEIGHT_SCREEN-1
-        else:
-            self.y_offset = self.y_offset - INC
-            if self.y_offset < 0:
-                self.y_sign = +1
-                self.y_offset = 0
-        dc.DrawLine(0, int(self.y_offset), WIDTH_SCREEN-1, int(HEIGHT_SCREEN-self.y_offset-1))
-        dc.DrawLine(0, int(HEIGHT_SCREEN-self.y_offset-1), WIDTH_SCREEN-1, int(self.y_offset))
+
+        for args in self.draw_list:
+            dc.DrawLine(*args)
 
         dc = wx.PaintDC(self.panel_Console)
         #dc.SetPen(wx.Pen('black', wx.DOT))

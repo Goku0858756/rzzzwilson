@@ -2,7 +2,7 @@ syntax: glob
 *.pyc
 *.lst
 *.ptp
-*.trace
+#*.trace
 *.core
 *.pdf
 iasm

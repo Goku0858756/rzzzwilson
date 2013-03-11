@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import time
-#import Queue
 import collections
-from threading import *
+import threading
 
 import wx 
 
@@ -24,36 +23,17 @@ LED_MARGIN = 5
 IMAGE_LED_OFF = 'images/led_off.png'
 IMAGE_LED_ON = 'images/led_on.png'
 
-INC = 0.1
-
 count = 1
 
+HALF_SCREEN = HEIGHT_SCREEN/2
 
-EVT_RESULT_ID = wx.NewId()
+class ImlacCpuThread(threading.Thread):
 
-def EVT_RESULT(win, func):
-    """Define Result Event."""
-    win.Connect(-1, -1, EVT_RESULT_ID, func)
+    def __init__(self, notify_window, queue):
 
-
-class ResultEvent(wx.PyEvent):
-    """Simple event to carry arbitrary result data."""
-    def __init__(self, data):
-        """Init Result Event."""
-        wx.PyEvent.__init__(self)
-        self.SetEventType(EVT_RESULT_ID)
-        self.data = data
-
-
-class ImlacCpuThread(Thread):
-
-    def __init__(self, notify_window):
-
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         self._notify_window = notify_window
-        self._want_abort = 0
-        # This starts the thread running on creation, but you could
-        # also make the GUI thread responsible for calling this
+        self.queue = queue
         self.start()
 
     def run(self):
@@ -61,28 +41,44 @@ class ImlacCpuThread(Thread):
         # a long process (well, 10s here) as a simple loop - you will
         # need to structure your processing so that you periodically
         # peek at the abort variable
-        y_offset = 0
-        y_sign = +1
+        left_offset = 0
+        right_offset = HEIGHT_SCREEN - 1
+        top_offset = 0
+        bottom_offset = HEIGHT_SCREEN - 1
+        shrink = True
 
         while True:
-            time.sleep(0.1)
-            if y_sign > 0:
-                y_offset = y_offset + INC
-                if y_offset > HEIGHT_SCREEN-1:
-                    y_sign = -1
-                    y_offset = HEIGHT_SCREEN-1
+            time.sleep(0.005)
+            if shrink:
+                left_offset += 1
+                right_offset -= 1
+                top_offset += 1
+                bottom_offset -= 1
+                if left_offset >= HALF_SCREEN:
+                    shrink = False
             else:
-                y_offset = y_offset - INC
-                if y_offset < 0:
-                    y_sign = +1
-                    y_offset = 0
-            draw_list = ((0, int(y_offset), WIDTH_SCREEN-1,
-                          int(HEIGHT_SCREEN-y_offset-1)),
-                         (0, int(HEIGHT_SCREEN-y_offset-1),
-                          WIDTH_SCREEN-1, int(y_offset)))
+                left_offset -= 1
+                right_offset += 1
+                top_offset -= 1
+                bottom_offset += 1
+                if left_offset < 0:
+                    shrink = True
+            draw_list = ((left_offset, top_offset, right_offset, top_offset),
+                         (right_offset, top_offset, right_offset, bottom_offset),
+                         (left_offset, bottom_offset, right_offset, bottom_offset),
+                         (left_offset, top_offset, left_offset, bottom_offset),
+                         (left_offset, int((bottom_offset-top_offset)/2),
+                          int((right_offset-left_offset)/2), top_offset),
+                         (int((right_offset-left_offset)/2), top_offset,
+                          right_offset, int((bottom_offset-top_offset)/2)),
+                         (right_offset, int((bottom_offset-top_offset)/2),
+                          int((right_offset-left_offset)/2), bottom_offset),
+                         (int((right_offset-left_offset)/2), bottom_offset,
+                          left_offset, int((bottom_offset-top_offset)/2))
+                        )
 
-            print str(draw_list)
-            wx.PostEvent(self._notify_window, ResultEvent(draw_list))
+            self.queue.append(draw_list)
+            #print(str(draw_list))
 
     def abort(self):
         """abort CPU thread."""
@@ -235,33 +231,28 @@ class MyFrame(wx.Frame):
 
         self.Fit() 
 
-        EVT_RESULT(self, self.OnResult)
-        #self.Bind(EVT_RESULT, self.OnResult)
+        self.queue = collections.deque()
+        self.draw_list = ((100,100,924,924),)
+        self.worker = ImlacCpuThread(self, self.queue)
 
-        self.worker = ImlacCpuThread(self)
-        self.draw_list = []
-
-    def OnResult(self, event):
-        self.draw_list = event.data
-        print('self.draw_list=%s' % str(self.draw_list))
-        self.Refresh()
-        #self.on_paint()
 
     def on_paint(self, event=None):
         global count
 
-        #print('on_paint')
         # establish the painting surface
         dc = wx.PaintDC(self.panel_Screen)
         dc.SetBackground(wx.Brush(SCREEN_COLOUR, 1))
         dc.SetPen(wx.Pen(PHOSPHOR_COLOUR, 1))
         dc.Clear()
 
+        if len(self.queue):
+            self.draw_list = self.queue.pop()
+            self.queue.clear()
+        
         for args in self.draw_list:
             dc.DrawLine(*args)
 
         dc = wx.PaintDC(self.panel_Console)
-        #dc.SetPen(wx.Pen('black', wx.DOT))
         dc.SetPen(wx.Pen('black', 1))
         dc.DrawLine(0, HEIGHT_CONSOLE - self.png_height,
                     WIDTH_CONSOLE-1, HEIGHT_CONSOLE - self.png_height)

@@ -465,7 +465,6 @@ class MyFrame(wx.Frame):
         # Initialize the emulator.
         boot_rom = 'ptr'    # default ROM loader
         Imlac.init(0, TRACE_FILENAME, None, None, boot_rom, CORE_FILENAME)
-        print('after Imlac.init()')
     
         # now perform operations
         for (operation, args) in ops:
@@ -490,7 +489,6 @@ class MyFrame(wx.Frame):
                 Trace.comment('Dataswitch value set to %06o' % args)
                 self.on_paint()
             elif operation == 'run':
-                print('before run')
                 MainCPU.PC = args
                 Trace.comment('Running from address %06o' % args)
                 if Imlac.tracestart:

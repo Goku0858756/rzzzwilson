@@ -11,3 +11,18 @@ but to no avail.  Adding an explicit stack to make it more closely follow the
 recursive approach doesn't work.
 
 Annoying!
+
+===============================================================================
+$ time python iterative.py 
+Maximum length is 528 for N=837799
+
+real	0m4.250s
+user	0m4.183s
+sys	0m0.033s
+$ time python recursive.py 
+Maximum length is 525 for N=837799
+
+real	0m2.420s
+user	0m2.367s
+sys	0m0.037s
+

@@ -1,4 +1,4 @@
-This is problem 14 in the Project Euler poblem set:
+This is problem 14 in the Project Euler problem set:
 http://projecteuler.net/problem=14
 
 There are two attempts here, one iterative and one recursive.  They both get
@@ -6,3 +6,5 @@ the same results, but the recursive one takes half the time that the iterative
 one takes.  This is unexpected.  I've tried making the iterative one faster,
 but to no avail.  Adding an explicit stack to make it more closely follow the
 recursive approach doesn't work.
+
+Annoying!

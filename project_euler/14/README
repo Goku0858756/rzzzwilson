@@ -1,6 +1,9 @@
 This is problem 14 in the Project Euler problem set:
 http://projecteuler.net/problem=14
 
+The basic approach uses memoisation.  The dictionary CollatzN holds the sequence
+length for N: N -> length.
+
 There are two attempts here, one iterative and one recursive.  They both get
 the same results, but the recursive one takes half the time that the iterative
 one takes.  This is unexpected.  I've tried making the iterative one faster,

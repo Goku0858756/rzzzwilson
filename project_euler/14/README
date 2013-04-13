@@ -1,6 +1,8 @@
 This is problem 14 in the Project Euler problem set:
 http://projecteuler.net/problem=14
 
+This one uses python 3.
+
 The basic approach uses memoisation.  The dictionary CollatzN holds the sequence
 length for N: N -> length.
 

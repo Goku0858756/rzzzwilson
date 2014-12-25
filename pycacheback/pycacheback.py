@@ -1,6 +1,8 @@
 """
 An extended dictionary offering limited LRU entries in the dictionary
 and an interface to an unlimited backing store.
+
+https://code.google.com/p/rzzzwilson/wiki/pyCacheBack
 """
 
 __license__ = """
@@ -32,10 +34,10 @@ class pyCacheBack(dict):
     # maximum number of key/value pairs for pyCacheBack
     maxLRU = 1000
 
-    def __init__(self, max_lru=maxLRU, **kwargs):
-        super(pyCacheBack, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
         self._lru_list = []
-        self._max_lru = max_lru
+        self._max_lru = kwargs.pop('max_lru', self.maxLRU)
+        super(pyCacheBack, self).__init__(*args, **kwargs)
 
     def __getitem__(self, key):
         if key in self:
@@ -54,6 +56,26 @@ class pyCacheBack(dict):
     def __delitem__(self, key):
         super(pyCacheBack, self).__delitem__(key)
         self._reorder_lru(key, remove=True)
+
+    def clear(self):
+        super(pyCacheBack, self).clear()
+        self._lru_list = []
+
+    def pop(self, *args):
+        k = args[0]
+        try:
+            self._lru_list.remove(k)
+        except ValueError:
+            pass
+        return super(pyCacheBack, self).pop(*args)
+
+    def popitem(self):
+        kv_return = super(pyCacheBack, self).popitem()
+        try:
+            self._lru_list.remove(kv_return[0])
+        except ValueError:
+            pass
+        return kv_return
 
     def _reorder_lru(self, key, remove=False):
         """Move key in LRU (if it exists) to 'recent' end.

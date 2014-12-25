@@ -6,6 +6,8 @@ Test pycacheback
 
 import os
 import shutil
+import random
+import copy
 from pycacheback import pyCacheBack
 import unittest
 
@@ -56,17 +58,21 @@ class TestpyCacheBack(unittest.TestCase):
         msg = "a.get(1) should return 'one', got %s" % a.get(1)
         self.assertEqual(a.get(1), 'one', msg)
 
-        msg = "a.get(10, 'NONE') should return 'NONE', got %s" % str(a.get(10, 'NONE'))
+        msg = ("a.get(10, 'NONE') should return 'NONE', got %s"
+               % str(a.get(10, 'NONE')))
         self.assertEqual(a.get(10, 'NONE'), 'NONE', msg)
 
         msg = "a.has_key(2) should return True, got %s" % str(a.has_key(2))
         self.assertTrue(a.has_key(2), msg)
 
-        msg = "a.has_key(10) should return False, got %s" % str(a.has_key(10))
+        msg = ("a.has_key(10) should return False, got %s"
+               % str(a.has_key(10)))
         self.assertFalse(a.has_key(10), msg)
 
-        msg = "a.items() should return [(1, 'one'), (2, '2'), (3, 3), ('4', 'four')], got %s" % str(a.items())
-        self.assertEqual([(1, 'one'), (2, '2'), (3, 3), ('4', 'four')], a.items(), msg)
+        msg = ("a.items() should return [(1, 'one'), (2, '2'), (3, 3), "
+               "('4', 'four')], got %s" % str(a.items()))
+        self.assertEqual([(1, 'one'), (2, '2'), (3, 3), ('4', 'four')],
+                         a.items(), msg)
 
         msg = "a.keys() should return [1, 2, 3, '4'], got %s" % str(a.keys())
         self.assertEqual([1, 2, 3, '4'], a.keys(), msg)
@@ -74,7 +80,8 @@ class TestpyCacheBack(unittest.TestCase):
         msg = "a.keys() should return [1, 2, 3, '4'], got %s" % str(a.keys())
         self.assertEqual([1, 2, 3, '4'], a.keys(), msg)
 
-        msg = "a.values() should return ['one', '2', 3, 'four'], got %s" % str(a.values())
+        msg = ("a.values() should return ['one', '2', 3, 'four'], got %s"
+               % str(a.values()))
         self.assertEqual(['one', '2', 3, 'four'], a.values(), msg)
 
         result = a.setdefault(10, 'TEN')
@@ -88,7 +95,8 @@ class TestpyCacheBack(unittest.TestCase):
         self.assertEqual(result, 'TEN', msg)
 
         result = a.pop(10, 'not found')
-        msg = "a.pop(10, 'not found') should return 'not found' but got %s?" % result
+        msg = ("a.pop(10, 'not found') should return 'not found' but got %s?"
+               % result)
         self.assertEqual(result, 'not found', msg)
 
         #msg = "a.pop(10) should raise KeyError exception, but didn't?"
@@ -112,10 +120,9 @@ class TestpyCacheBack(unittest.TestCase):
         """Test the LRU mechanism."""
 
         # make an extended dictionary, maxLRU is 2 for testing
-        a = pyCacheBack(2)
+        a = pyCacheBack(max_lru=2)
 
         # the LRU list should be empty when we start
-
         msg = ("Initial LRU list should be empty, but it's %s"
                % str(a._lru_list))
         self.assertEqual(a._lru_list, [], msg)
@@ -211,7 +218,7 @@ class TestpyCacheBack(unittest.TestCase):
                           % (expected_contents, file_contents))
 
         # OK, test it
-        a = my_cache(2)
+        a = my_cache(max_lru=2)
         a[(1,1)] = 'one and one'
         a[(1,2)] = 'one and two'
         a[(1,1)] = 'one and one, second value'  # redefine (1,1) value
@@ -228,13 +235,162 @@ class TestpyCacheBack(unittest.TestCase):
         msg = "a[(1,2)] != 'one and two'!"
         self.assertEqual(a[(1,2)], 'one and two', msg)
 
-        # delete a key, check backing file still there
+        # delete a key, ensure gone & check backing file still there
         del a[(1,3)]
         check_file(self, os.path.join(test_dir, '1', '3'),
                    'one, three')
 
         # clean up
         shutil.rmtree(test_dir)
+
+    def testIter(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        for i, x in enumerate(iter(a)):
+            msg = "'%d'th key should be %d, got %s" % (i+1, kv_list[i][0], x)
+            self.assertEqual(kv_list[i][0], x, msg)
+
+    def testCopy(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        b = a.copy()
+        msg = 'Length of copied dict should be %d, got %d' % (len(a), len(b))
+        self.assertEqual(len(b), len(a), msg)
+        # change element of 'a', see if 'b' gets it
+        orig = b[2]
+        a[2] = 'test'
+        _ = a[3]
+        msg = "copy: b[2] should be %s, got %s" % (orig, str(b[2]))
+        self.assertEqual(b[2], orig, msg)
+
+    def testClear(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        msg = 'Length before should be %d, got %d' % (len(kv_list), len(a))
+        self.assertEqual(len(a), len(kv_list), msg)
+        a.clear()
+        msg = 'Length after should be 0, got %d' % len(a)
+        self.assertEqual(len(a), 0, msg)
+        # check LRU list is empty
+        msg = ".clear() didn't empty ._lru_list, it's '%s'" % str(a._lru_list)
+        self.assertEqual([], a._lru_list, msg)
+
+    def testGet(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        msg = (".get(1) should return '%s', got '%s'"
+               % (str(kv_list[1][0]), str(a.get(1))))
+        self.assertEqual(a.get(1), 'one', msg)
+
+    def testHasKey(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        msg = ".has_key(1) should return True, got '%s'" % str(a.has_key(1))
+        self.assertEqual(a.has_key(1), True, msg)
+        msg = (".has_key(100) should return False, got '%s'"
+               % str(a.has_key(100)))
+        self.assertEqual(a.has_key(100), False, msg)
+
+        self.assertEqual(1 in a, True, msg)
+
+    def testItems(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        expected = str(kv_list)
+        msg = (".items() should return '%s', got '%s'"
+               % (expected, str(a.items())))
+        self.assertEqual(expected, str(a.items()), msg)
+
+    def testItems(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        for i, x in enumerate(a.iteritems()):
+            msg = (".iteritems() item %d should be '%s', got '%s'"
+                   % (i, str(kv_list[i]), str(x)))
+            self.assertEqual(kv_list[i], x, msg)
+
+    def testItervalues(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        for i, x in enumerate(a.itervalues()):
+            msg = (".itervalues() item %d should be '%s', got '%s'"
+                   % (i, str(kv_list[i][1]), str(x)))
+            self.assertEqual(kv_list[i][1], x, msg)
+
+    def testItervalues(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        k_list = [x[0] for x in kv_list]
+        msg = ".keys() should be '%s', got '%s'" % (str(k_list), str(a.keys()))
+        self.assertEqual(k_list, a.keys(), msg)
+
+    def testPop(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        random.shuffle(kv_list)
+        for (k, v) in kv_list:
+            _ = a[k]
+        expected_lru_len = len(a._lru_list)
+        for (k, v) in kv_list:
+            value = a.pop(k, None)
+            msg = (".pop(%s) should return '%s', got '%s'"
+                   % (str(k), str(v), str(value)))
+            self.assertEqual(v, value, msg)
+            expected_lru_len = expected_lru_len - 1
+            msg = (".pop(%s) should leave dict with len(LRU)=%d, got %d"
+                   % (str(k), expected_lru_len, len(a._lru_list)))
+            self.assertEqual(len(a._lru_list), expected_lru_len, msg)
+
+    def testPopitem(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        # get a big LRU list
+        shuffle_kv_list = copy.deepcopy(kv_list)
+        random.shuffle(shuffle_kv_list)
+        for (k, v) in shuffle_kv_list:
+            _ = a[k]
+        a_len = len(a)
+        lru_len = len(a._lru_list)
+        for i in range(a_len):
+            (k, v) = a.popitem()
+            msg = (".popitem() returned '%s', shouldn't be in dict?"
+                   % str((k, v)))
+            self.assertIn((k, v), kv_list, msg)
+        msg = ".popitem() all done, len should be 0, got %d" % len(a)
+        self.assertEqual(len(a), 0, msg)
+        msg = (".popitem() all done, ._lru_list should be [], got '%s'"
+               % str(a._lru_list))
+        self.assertEqual(a._lru_list, [], msg)
+
+    def testSetdefault(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        ret_val = a.setdefault(100, True)
+        msg = ".setdefault(100, True) should return True, got %s" % str(ret_val)
+        self.assertEqual(ret_val, True, msg)
+
+    def testUpdate(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        kv_update = [(4, '****'), (5, 'V')]
+        a.update(kv_update)
+        expected_len = len(kv_list) + len(kv_update)
+        msg = (".update() should create length %d, got length %d"
+               % (expected_len, len(a)))
+        self.assertEqual(expected_len, len(a), msg)
+        # check actual contents
+        full_list = kv_list + kv_update
+        b = pyCacheBack(full_list, max_lru=10)
+        msg = ".update() didn't work, got dict '%s'" % str(a)
+        self.assertEqual(b, a, msg)
+
+    def testValues(self):
+        kv_list = [(1, 'one'), (2, 2), (3, 3.0)]
+        a = pyCacheBack(kv_list, max_lru=10)
+        expected_values = [kv[1] for kv in kv_list]
+        msg = (".values should return '%s', got '%s'"
+               % (str(expected_values), str(a.values())))
+        self.assertEqual(expected_values, a.values(), msg)
 
 
 unittest.main()

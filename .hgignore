@@ -7,3 +7,4 @@ syntax: glob
 *.pdf
 *.kml
 iasm
+.DS_Store
